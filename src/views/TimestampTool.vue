@@ -168,9 +168,7 @@ onUnmounted(() => {
   background-image: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%);
 
   .title {
-    text-align: center;
-    font-size: 2rem;
-    margin: 20px 0;
+    color: #1a1a1a;
   }
 
   .form {
