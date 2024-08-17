@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // 转换时间戳为日期
-import {reactive} from "vue";
+import {onMounted, onUnmounted, reactive, ref} from "vue";
+import {CopyDocument} from '@element-plus/icons-vue'
 
 enum ReloadType {
   InputSecondsTimestamp,
@@ -38,10 +39,11 @@ function secondToMillisecond(second: number): number {
   return second * 1000;
 }
 
-// 毫秒级别转换为秒级别
+// 毫秒级别转换为秒级别 直接取整
 function millisecondToSecond(millisecond: number): number {
-  return millisecond / 1000;
+  return Math.floor(millisecond / 1000);
 }
+
 // endregion
 
 const form = reactive({
@@ -54,7 +56,7 @@ const convertTimestamp = (type: ReloadType) => {
   switch (type) {
     case ReloadType.InputSecondsTimestamp:
       form.millisecondTimestamp = form.secondTimestamp ? secondToMillisecond(Number(form.secondTimestamp)).toString() : '';
-      form.date = form.secondTimestamp ? secondTimestampToDate(Number(form.secondTimestamp) * 1000) : '';
+      form.date = form.secondTimestamp ? secondTimestampToDate(Number(form.secondTimestamp)) : '';
       break;
     case ReloadType.InputMillisecondsTimestamp:
       form.secondTimestamp = form.millisecondTimestamp ? millisecondToSecond(Number(form.millisecondTimestamp)).toString() : '';
@@ -66,6 +68,34 @@ const convertTimestamp = (type: ReloadType) => {
       break;
   }
 }
+
+// region 实时时间
+const timer = ref(Date.now());
+const formattedTime = ref(new Date(timer.value).toLocaleString());
+
+const updateTimestamp = () => {
+  timer.value = Date.now();
+  formattedTime.value = new Date(timer.value).toLocaleString();
+};
+
+const copyTimestampToClipboard = () => {
+  navigator.clipboard.writeText(timer.value.toString());
+};
+
+const copyFormattedTimeToClipboard = () => {
+  navigator.clipboard.writeText(formattedTime.value);
+};
+
+let intervalId: number;
+
+onMounted(() => {
+  intervalId = window.setInterval(updateTimestamp, 1);
+});
+
+onUnmounted(() => {
+  clearInterval(intervalId);
+});
+// endregion
 </script>
 
 <template>
@@ -94,9 +124,29 @@ const convertTimestamp = (type: ReloadType) => {
         />
       </el-form-item>
     </el-form>
+    <p>当前秒级别时间戳: {{ timer }}
+      <el-button
+          class="copy-button"
+          @click="copyTimestampToClipboard()"
+      >
+        <el-icon><CopyDocument /></el-icon>
+      </el-button>
+    </p>
+    <p>当前时间: {{ formattedTime }}
+      <el-button
+          class="copy-button"
+          @click="copyFormattedTimeToClipboard()"
+      >
+        <el-icon><CopyDocument /></el-icon>
+      </el-button>
+    </p>
   </div>
 </template>
 
 <style scoped lang="scss">
-
+#timestamp-tool {
+  .copy-button {
+    margin-left: 10px;
+  }
+}
 </style>
