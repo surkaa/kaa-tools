@@ -53,6 +53,18 @@ const form = reactive({
 });
 
 const convertTimestamp = (type: ReloadType) => {
+  // 清除form.millisecondTimestamp和form.secondTimestamp中含有非数字的内容 含有的话置空 然后退出函数 不进行转换
+  // oninput="value=value.replace(/[^\d.]/g,'')" 也能做到 当时@input会失效
+
+  if (form.millisecondTimestamp && !/^\d+$/.test(form.millisecondTimestamp)) {
+    form.millisecondTimestamp = '';
+    return;
+  }
+  if (form.secondTimestamp && !/^\d+$/.test(form.secondTimestamp)) {
+    form.secondTimestamp = '';
+    return;
+  }
+
   switch (type) {
     case ReloadType.InputSecondsTimestamp:
       form.millisecondTimestamp = form.secondTimestamp ? secondToMillisecond(Number(form.secondTimestamp)).toString() : '';
@@ -100,8 +112,8 @@ onUnmounted(() => {
 
 <template>
   <div id="timestamp-tool">
-    <h1>Timestamp Tool</h1>
-    <el-form :model="form" label-width="auto">
+    <h1 class="title">Timestamp Tool</h1>
+    <el-form class="form" :model="form" label-width="auto">
       <el-form-item label="秒级别时间戳">
         <el-input
             v-model="form.secondTimestamp"
@@ -124,29 +136,56 @@ onUnmounted(() => {
         />
       </el-form-item>
     </el-form>
-    <p>当前秒级别时间戳: {{ timer }}
-      <el-button
-          class="copy-button"
-          @click="copyTimestampToClipboard()"
-      >
-        <el-icon><CopyDocument /></el-icon>
-      </el-button>
-    </p>
-    <p>当前时间: {{ formattedTime }}
-      <el-button
-          class="copy-button"
-          @click="copyFormattedTimeToClipboard()"
-      >
-        <el-icon><CopyDocument /></el-icon>
-      </el-button>
-    </p>
+    <div class="current">
+      <p>当前秒级别时间戳: {{ timer }}
+        <el-button
+            class="copy-button"
+            @click="copyTimestampToClipboard()"
+        >
+          <el-icon>
+            <CopyDocument/>
+          </el-icon>
+        </el-button>
+      </p>
+      <p>当前时间: {{ formattedTime }}
+        <el-button
+            class="copy-button"
+            @click="copyFormattedTimeToClipboard()"
+        >
+          <el-icon>
+            <CopyDocument/>
+          </el-icon>
+        </el-button>
+      </p>
+    </div>
   </div>
 </template>
 
 <style scoped lang="scss">
 #timestamp-tool {
-  .copy-button {
-    margin-left: 10px;
+  width: 100vw;
+  height: 100vh;
+  background-image: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%);
+
+  .title {
+    text-align: center;
+    font-size: 2rem;
+    margin: 20px 0;
+  }
+
+  .form {
+    // 占居宽度尽量小
+    width: fit-content;
+    margin: 0 auto;
+  }
+
+  .current {
+    margin-top: 20px;
+    text-align: center;
+
+    .copy-button {
+      margin-left: 10px;
+    }
   }
 }
 </style>
