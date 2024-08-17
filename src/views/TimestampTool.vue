@@ -1,0 +1,102 @@
+<script setup lang="ts">
+// 转换时间戳为日期
+import {reactive} from "vue";
+
+enum ReloadType {
+  InputSecondsTimestamp,
+  InputMillisecondsTimestamp,
+  InputDate,
+}
+
+// region 时间戳转换方法
+// 转换时间戳为日期
+function secondTimestampToDate(timestamp: number): string {
+  const date = new Date(timestamp);
+  return date.toLocaleString('zh-CN', {hour12: false});
+}
+
+// 转换时间戳为日期
+function millisecondTimestampToDate(timestamp: number): string {
+  const date = new Date(timestamp / 1000);
+  return date.toLocaleString('zh-CN', {hour12: false});
+}
+
+// 转换日期为时间戳
+function dateToSecondTimestamp(dateString: string): number {
+  const date = new Date(dateString);
+  return date.getTime();
+}
+
+// 转换日期为时间戳
+function dateToMillisecondTimestamp(dateString: string): number {
+  const date = new Date(dateString);
+  return date.getTime() * 1000;
+}
+
+// 秒级别转换为毫秒级别
+function secondToMillisecond(second: number): number {
+  return second * 1000;
+}
+
+// 毫秒级别转换为秒级别
+function millisecondToSecond(millisecond: number): number {
+  return millisecond / 1000;
+}
+// endregion
+
+const form = reactive({
+  secondTimestamp: '',
+  millisecondTimestamp: '',
+  date: ''
+});
+
+const convertTimestamp = (type: ReloadType) => {
+  switch (type) {
+    case ReloadType.InputSecondsTimestamp:
+      form.millisecondTimestamp = form.secondTimestamp ? secondToMillisecond(Number(form.secondTimestamp)).toString() : '';
+      form.date = form.secondTimestamp ? secondTimestampToDate(Number(form.secondTimestamp) * 1000) : '';
+      break;
+    case ReloadType.InputMillisecondsTimestamp:
+      form.secondTimestamp = form.millisecondTimestamp ? millisecondToSecond(Number(form.millisecondTimestamp)).toString() : '';
+      form.date = form.millisecondTimestamp ? millisecondTimestampToDate(Number(form.millisecondTimestamp)) : '';
+      break;
+    case ReloadType.InputDate:
+      form.secondTimestamp = form.date ? dateToSecondTimestamp(form.date).toString() : '';
+      form.millisecondTimestamp = form.date ? dateToMillisecondTimestamp(form.date).toString() : '';
+      break;
+  }
+}
+</script>
+
+<template>
+  <div id="timestamp-tool">
+    <h1>Timestamp Tool</h1>
+    <el-form :model="form" label-width="auto">
+      <el-form-item label="秒级别时间戳">
+        <el-input
+            v-model="form.secondTimestamp"
+            placeholder="输入秒级别时间戳"
+            @input="convertTimestamp(ReloadType.InputSecondsTimestamp)"
+        />
+      </el-form-item>
+      <el-form-item label="毫秒别时间戳">
+        <el-input
+            v-model="form.millisecondTimestamp"
+            placeholder="输入毫秒别时间戳"
+            @input="convertTimestamp(ReloadType.InputMillisecondsTimestamp)"
+        />
+      </el-form-item>
+      <el-form-item label="日期">
+        <el-input
+            v-model="form.date"
+            placeholder="输入日期"
+            @input="convertTimestamp(ReloadType.InputDate)"
+        />
+      </el-form-item>
+    </el-form>
+  </div>
+</template>
+
+<style scoped lang="scss">
+
+</style>
