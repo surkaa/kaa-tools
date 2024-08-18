@@ -13,7 +13,7 @@ enum ReloadType {
 
 let intervalId: number;
 
-const form = reactive({
+const formData = reactive({
   secondTimestamp: '',
   millisecondTimestamp: '',
   date: ''
@@ -64,35 +64,35 @@ const convertTimestamp = (type: ReloadType) => {
   // 清除form.millisecondTimestamp和form.secondTimestamp中含有非数字的内容 含有的话置空 然后退出函数 不进行转换
   // oninput="value=value.replace(/[^\d.]/g,'')" 也能做到 当时@input会失效
 
-  if (form.millisecondTimestamp && !/^\d+$/.test(form.millisecondTimestamp)) {
-    form.millisecondTimestamp = '';
+  if (formData.millisecondTimestamp && !/^\d+$/.test(formData.millisecondTimestamp)) {
+    formData.millisecondTimestamp = '';
     ElMessage.error('毫秒别时间戳只能输入数字');
     return;
   }
-  if (form.secondTimestamp && !/^\d+$/.test(form.secondTimestamp)) {
-    form.secondTimestamp = '';
+  if (formData.secondTimestamp && !/^\d+$/.test(formData.secondTimestamp)) {
+    formData.secondTimestamp = '';
     ElMessage.error('秒别时间戳只能输入数字');
     return;
   }
   // 日期格式检查 2021-08-01 12:00:00
-  if (form.date && !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(form.date)) {
-    form.date = '';
+  if (formData.date && !dayjs(formData.date).isValid()) {
+    formData.date = '';
     ElMessage.error('日期格式错误');
     return;
   }
 
   switch (type) {
     case ReloadType.InputSecondsTimestamp:
-      form.millisecondTimestamp = form.secondTimestamp ? secondToMillisecond(Number(form.secondTimestamp)).toString() : '';
-      form.date = form.secondTimestamp ? secondTimestampToDate(Number(form.secondTimestamp)) : '';
+      formData.millisecondTimestamp = formData.secondTimestamp ? secondToMillisecond(Number(formData.secondTimestamp)).toString() : '';
+      formData.date = formData.secondTimestamp ? secondTimestampToDate(Number(formData.secondTimestamp)) : '';
       break;
     case ReloadType.InputMillisecondsTimestamp:
-      form.secondTimestamp = form.millisecondTimestamp ? millisecondToSecond(Number(form.millisecondTimestamp)).toString() : '';
-      form.date = form.millisecondTimestamp ? millisecondTimestampToDate(Number(form.millisecondTimestamp)) : '';
+      formData.secondTimestamp = formData.millisecondTimestamp ? millisecondToSecond(Number(formData.millisecondTimestamp)).toString() : '';
+      formData.date = formData.millisecondTimestamp ? millisecondTimestampToDate(Number(formData.millisecondTimestamp)) : '';
       break;
     case ReloadType.InputDate:
-      form.secondTimestamp = form.date ? dateToSecondTimestamp(form.date).toString() : '';
-      form.millisecondTimestamp = form.date ? dateToMillisecondTimestamp(form.date).toString() : '';
+      formData.secondTimestamp = formData.date ? dateToSecondTimestamp(formData.date).toString() : '';
+      formData.millisecondTimestamp = formData.date ? dateToMillisecondTimestamp(formData.date).toString() : '';
       break;
   }
 }
@@ -102,13 +102,13 @@ const pasteTimestamp = (type: ReloadType) => {
     console.log(type, 'pasteTimestamp', text)
     switch (type) {
       case ReloadType.InputSecondsTimestamp:
-        form.secondTimestamp = text;
+        formData.secondTimestamp = text;
         break;
       case ReloadType.InputMillisecondsTimestamp:
-        form.millisecondTimestamp = text;
+        formData.millisecondTimestamp = text;
         break;
       case ReloadType.InputDate:
-        form.date = text;
+        formData.date = text;
         break;
     }
     convertTimestamp(type);
@@ -152,12 +152,12 @@ onUnmounted(() => {
 <template>
   <div id="timestamp-tool">
     <h1 class="title">Timestamp Tool</h1>
-    <el-form class="form" :model="form" label-width="auto">
+    <el-form class="form" :model="formData" label-width="auto">
       <el-row :gutter="cardRowGutter">
         <el-col :span="cardColSpan">
           <el-form-item label="秒级别时间戳">
             <el-input
-                v-model="form.secondTimestamp"
+                v-model="formData.secondTimestamp"
                 placeholder="输入秒级别时间戳"
                 @input="convertTimestamp(ReloadType.InputSecondsTimestamp)"
             />
@@ -179,7 +179,7 @@ onUnmounted(() => {
         <el-col :span="cardColSpan">
           <el-form-item label="毫秒别时间戳">
             <el-input
-                v-model="form.millisecondTimestamp"
+                v-model="formData.millisecondTimestamp"
                 placeholder="输入毫秒别时间戳"
                 @input="convertTimestamp(ReloadType.InputMillisecondsTimestamp)"
             />
@@ -201,7 +201,7 @@ onUnmounted(() => {
         <el-col :span="cardColSpan">
           <el-form-item label="日期">
             <el-input
-                v-model="form.date"
+                v-model="formData.date"
                 placeholder="输入日期"
                 @input="convertTimestamp(ReloadType.InputDate)"
             />
