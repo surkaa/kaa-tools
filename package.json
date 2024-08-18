@@ -10,11 +10,14 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
+    "@primevue/themes": "^4.0.4",
     "@vueuse/core": "^10.7.2",
     "axios": "^1.6.5",
     "dayjs": "^1.11.11",
     "element-plus": "^2.5.1",
     "pinia": "^2.1.7",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.0.4",
     "terser": "^5.27.0",
     "vue": "^3.3.11",
     "vue-router": "^4.2.5"
