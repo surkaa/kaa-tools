@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // 转换时间戳为日期
 import {onMounted, onUnmounted, reactive, ref} from "vue";
-import {CopyDocument, EditPen} from '@element-plus/icons-vue'
+import {CopyDocument, EditPen} from '@element-plus/icons-vue';
 import {ElMessage} from "element-plus";
 import dayjs from "dayjs";
 
@@ -22,6 +22,7 @@ const formData = reactive({
 const cardRowGutter = 10;
 const cardColSpan = 20;
 const cardColBtnSpan = 4;
+const stopLive = ref(false);
 
 // region 时间戳转换方法
 // 转换时间戳为日期
@@ -123,6 +124,9 @@ const formattedTime = ref(
 );
 
 const updateTimestamp = () => {
+  if (stopLive.value) {
+    return;
+  }
   timer.value = dayjs().valueOf();
   formattedTime.value = dayjs(timer.value).format('YYYY-MM-DD HH:mm:ss');
 };
@@ -222,7 +226,21 @@ onUnmounted(() => {
       <el-row :gutter="cardRowGutter">
         <el-col :span="cardColSpan">
           <el-form-item label="当前毫秒别时间戳">
-            {{ timer }}
+            <div class="current-timestamp">
+              <span>{{ timer }}</span>
+              <el-button
+                  type="text"
+                  title="点击暂停/继续实时时间戳"
+                  class="current-timestamp-btn"
+                  @click="stopLive = !stopLive"
+              >
+                <!-- 暂停红色按钮 继续黑色三角按钮 -->
+                <div :class="{
+                'resume': stopLive,
+                'stop': !stopLive
+              }" class="stopLiveIcon"/>
+              </el-button>
+            </div>
           </el-form-item>
         </el-col>
         <el-col :span="cardColBtnSpan">
@@ -273,6 +291,30 @@ onUnmounted(() => {
     // 占居宽度尽量小
     width: fit-content;
     margin: 0 auto;
+
+    .current-timestamp {
+      display: flex;
+      width: 100%;
+
+      .current-timestamp-btn {
+        margin-left: auto;
+
+        .stopLiveIcon {
+          width: 20px;
+          height: 20px;
+          border-radius: 3px;
+        }
+
+        .stop {
+          background-color: rgba(255,0,0,0.61);
+        }
+
+        .resume {
+          background-color: rgba(0,0,0,0.61);
+        }
+      }
+
+    }
   }
 
   .current {
