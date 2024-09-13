@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, ref, watch} from "vue";
+import {computed, onMounted, ref, watch} from "vue";
 import generateSvg from "/src/assets/generate.svg";
 import {ElMessage} from "element-plus";
 
@@ -29,6 +29,7 @@ const containArr = computed(() => {
   }
   return arr;
 });
+const copyHistory = ref<string[]>([]);
 
 const generatePassword = () => {
   let str = '';
@@ -45,6 +46,15 @@ const generatePassword = () => {
     str += randomStr[randomStrIndex];
   }
   password.value = str;
+
+  // 触发旋转动画
+  const generateBtn = document.querySelector('.generate-btn');
+  if (generateBtn) {
+    generateBtn.classList.add('rotate');
+    generateBtn.addEventListener('animationend', () => {
+      generateBtn.classList.remove('rotate');
+    }, {once: true});
+  }
 }
 
 const copyPassword = () => {
@@ -54,16 +64,51 @@ const copyPassword = () => {
   input.select();
   document.execCommand('copy');
   document.body.removeChild(input);
+  // 保存复制历史
+  const copyHistoryStr = localStorage.getItem('copyHistory');
+  if (copyHistoryStr) {
+    const copyHistoryArr = JSON.parse(copyHistoryStr);
+    copyHistoryArr.push(password.value);
+    localStorage.setItem('copyHistory', JSON.stringify(copyHistoryArr));
+  } else {
+    localStorage.setItem('copyHistory', JSON.stringify([password.value]));
+  }
+  copyHistory.value.push(password.value);
   ElMessage.success('复制成功');
 }
 
-watch([passwordLength, isContainLowercase, isContainUppercase, isContainNumber, isContainSymbol], () => {
-      generatePassword();
-    },
-    {
-      immediate: true
-    }
+watch([
+      passwordLength,
+      isContainLowercase,
+      isContainUppercase,
+      isContainNumber,
+      isContainSymbol
+    ],
+    generatePassword
 );
+
+const loadCopyHistory = () => {
+  const copyHistoryStr = localStorage.getItem('copyHistory');
+  if (copyHistoryStr) {
+    copyHistory.value = JSON.parse(copyHistoryStr);
+  }
+}
+
+const deleteCopyHistory = (item: string) => {
+  const copyHistoryStr = localStorage.getItem('copyHistory');
+  if (copyHistoryStr) {
+    const copyHistoryArr = JSON.parse(copyHistoryStr);
+    const index = copyHistoryArr.indexOf(item);
+    copyHistoryArr.splice(index, 1);
+    localStorage.setItem('copyHistory', JSON.stringify(copyHistoryArr));
+    copyHistory.value = copyHistoryArr;
+  }
+}
+
+onMounted(() => {
+  generatePassword();
+  loadCopyHistory();
+});
 </script>
 
 <template>
@@ -83,11 +128,20 @@ watch([passwordLength, isContainLowercase, isContainUppercase, isContainNumber, 
     <el-row
         class="operate-container"
     >
-      <el-input-number class="password-length" v-model="passwordLength" :min="1" :max="32" label="密码长度"/>
+      <el-input-number class="password-length" v-model="passwordLength" :min="1" :max="128" label="密码长度"/>
       <el-icon :size="20" class="generate-btn">
         <img :src="generateSvg" alt="Generate" @click="generatePassword"/>
       </el-icon>
       <el-button class="copy-btn" type="primary" @click="copyPassword">复制密码</el-button>
+    </el-row>
+    <h2 v-if="copyHistory.length > 0">复制历史</h2>
+    <el-row v-for="item in copyHistory">
+      <el-tag
+          :key="item"
+          closable
+          @close="deleteCopyHistory(item)"
+      >{{ item }}
+      </el-tag>
     </el-row>
   </div>
 </template>
@@ -123,6 +177,19 @@ watch([passwordLength, isContainLowercase, isContainUppercase, isContainNumber, 
   .generate-btn {
     cursor: pointer;
     margin: 20px;
+  }
+
+  @keyframes rotate {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .generate-btn.rotate {
+    animation: rotate .5s linear;
   }
 
   .copy-btn {
