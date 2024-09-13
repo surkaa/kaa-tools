@@ -1,15 +1,35 @@
 <script setup lang="ts">
-import {computed, onMounted, ref, watch} from "vue";
+import {computed, onMounted, reactive, ref, watch} from "vue";
 import generateSvg from "/src/assets/generate.svg";
 import {ElMessage} from "element-plus";
 
-const copyHistoryLocalStorageKey = 'copyHistory';
-const passwordLengthLocalStorageKey = 'password';
-const passwordLength = ref(parseInt(localStorage.getItem(passwordLengthLocalStorageKey) || '16'));
-const isContainLowercase = ref(true);
-const isContainUppercase = ref(true);
-const isContainNumber = ref(true);
-const isContainSymbol = ref(false);
+const RandomPasswordLocalStorageKey = 'RandomPasswordLocalStorageArgs';
+
+interface RandomPasswordLocalStorageArgs {
+  passwordLength: number;
+  isContainLowercase: boolean;
+  isContainUppercase: boolean;
+  isContainNumber: boolean;
+  isContainSymbol: boolean;
+  copyHistory: string[];
+  reloadAfterCopy: false;
+}
+
+const args = reactive<RandomPasswordLocalStorageArgs>({
+  passwordLength: 16,
+  isContainLowercase: true,
+  isContainUppercase: true,
+  isContainNumber: true,
+  isContainSymbol: true,
+  copyHistory: [],
+  reloadAfterCopy: false,
+});
+const loadArgs = () => {
+  const argsStr = localStorage.getItem(RandomPasswordLocalStorageKey);
+  if (argsStr) {
+    Object.assign(args, JSON.parse(argsStr));
+  }
+}
 const password = ref('');
 const lowercase = 'abcdefghijklmnopqrstuvwxyz';
 const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -17,21 +37,20 @@ const number = '0123456789';
 const symbol = '!@#$%^&*()_+-=[]{}|;:,.<>?';
 const containArr = computed(() => {
   const arr = [];
-  if (isContainLowercase.value) {
+  if (args.isContainLowercase) {
     arr.push(lowercase);
   }
-  if (isContainUppercase.value) {
+  if (args.isContainUppercase) {
     arr.push(uppercase);
   }
-  if (isContainNumber.value) {
+  if (args.isContainNumber) {
     arr.push(number);
   }
-  if (isContainSymbol.value) {
+  if (args.isContainSymbol) {
     arr.push(symbol);
   }
   return arr;
 });
-const copyHistory = ref<string[]>([]);
 
 const generatePassword = () => {
   let str = '';
@@ -41,7 +60,7 @@ const generatePassword = () => {
     ElMessage.error('至少选择一种字符');
     return;
   }
-  for (let i = 0; i < passwordLength.value; i++) {
+  for (let i = 0; i < args.passwordLength; i++) {
     const randomIndex = Math.floor(Math.random() * arr.length);
     const randomStr = arr[randomIndex];
     const randomStrIndex = Math.floor(Math.random() * randomStr.length);
@@ -60,59 +79,41 @@ const generatePassword = () => {
 }
 
 const copyPassword = () => {
+  if (!password.value) {
+    return;
+  }
   navigator.clipboard.writeText(password.value).then(() => {
     // 保存复制历史
-    const copyHistoryStr = localStorage.getItem(copyHistoryLocalStorageKey);
-    if (copyHistoryStr) {
-      const copyHistoryArr = JSON.parse(copyHistoryStr);
-      copyHistoryArr.push(password.value);
-    } else {
-      localStorage.setItem(copyHistoryLocalStorageKey, JSON.stringify([password.value]));
+    if (!args.copyHistory.includes(password.value)) {
+      args.copyHistory.unshift(password.value);
     }
-    copyHistory.value.push(password.value);
     ElMessage.success('复制成功');
+    if (args.reloadAfterCopy) {
+      generatePassword();
+    }
   }).catch(err => {
     ElMessage.error('复制失败');
     console.error('复制失败:', err);
   });
 }
 
-watch([
-      passwordLength,
-      isContainLowercase,
-      isContainUppercase,
-      isContainNumber,
-      isContainSymbol
-    ],
-    generatePassword
-);
-
-watch(passwordLength, (newVal) => {
+watch(args, (newVal) => {
   // 保存到本地存储
-  localStorage.setItem(passwordLengthLocalStorageKey, newVal.toString());
+  localStorage.setItem(RandomPasswordLocalStorageKey, JSON.stringify(newVal));
 });
 
-const loadCopyHistory = () => {
-  const copyHistoryStr = localStorage.getItem(copyHistoryLocalStorageKey);
-  if (copyHistoryStr) {
-    copyHistory.value = JSON.parse(copyHistoryStr);
+const deleteCopyHistory = (item: string) => {
+  const index = args.copyHistory.indexOf(item);
+  if (index !== -1) {
+    args.copyHistory.splice(index, 1);
   }
 }
 
-const deleteCopyHistory = (item: string) => {
-  const copyHistoryStr = localStorage.getItem(copyHistoryLocalStorageKey);
-  if (copyHistoryStr) {
-    const copyHistoryArr = JSON.parse(copyHistoryStr);
-    const index = copyHistoryArr.indexOf(item);
-    copyHistoryArr.splice(index, 1);
-    localStorage.setItem(copyHistoryLocalStorageKey, JSON.stringify(copyHistoryArr));
-    copyHistory.value = copyHistoryArr;
-  }
-}
+const isEmptyHistory = computed(() => args.copyHistory.length === 0);
 
 onMounted(() => {
   generatePassword();
-  loadCopyHistory();
+  loadArgs();
 });
 </script>
 
@@ -125,29 +126,31 @@ onMounted(() => {
         :gutter="20"
         style="margin-bottom: 20px"
     >
-      <el-checkbox v-model="isContainLowercase">小写字母</el-checkbox>
-      <el-checkbox v-model="isContainUppercase">大写字母</el-checkbox>
-      <el-checkbox v-model="isContainNumber">数字</el-checkbox>
-      <el-checkbox v-model="isContainSymbol">符号</el-checkbox>
+      <el-checkbox v-model="args.isContainLowercase" @change="generatePassword">小写字母</el-checkbox>
+      <el-checkbox v-model="args.isContainUppercase" @change="generatePassword">大写字母</el-checkbox>
+      <el-checkbox v-model="args.isContainNumber" @change="generatePassword">数字</el-checkbox>
+      <el-checkbox v-model="args.isContainSymbol" @change="generatePassword">符号</el-checkbox>
+      <el-checkbox v-model="args.reloadAfterCopy">复制后继续生成</el-checkbox>
     </el-row>
     <el-row
         class="operate-container"
     >
-      <el-input-number class="password-length" v-model="passwordLength" :min="1" :max="128" label="密码长度"/>
+      <el-input-number class="password-length" v-model="args.passwordLength" :min="1" :max="128" label="密码长度"/>
       <el-icon :size="20" class="generate-btn">
         <img :src="generateSvg" alt="Generate" @click="generatePassword"/>
       </el-icon>
       <el-button class="copy-btn" type="primary" @click="copyPassword">复制密码</el-button>
     </el-row>
-    <h2 v-if="copyHistory.length > 0">复制历史</h2>
-    <el-row v-for="item in copyHistory">
+    <h2 v-if="!isEmptyHistory">复制历史</h2>
+    <div class="flex-container">
       <el-tag
+          v-for="item in args.copyHistory"
           :key="item"
           closable
           @close="deleteCopyHistory(item)"
       >{{ item }}
       </el-tag>
-    </el-row>
+    </div>
   </div>
 </template>
 
@@ -198,6 +201,14 @@ onMounted(() => {
   }
 
   .copy-btn {
+    margin: 20px;
+  }
+
+  .flex-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
     margin: 20px;
   }
 }
