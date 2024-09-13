@@ -11,20 +11,20 @@ const routes: RouteRecordRaw[] = [
         component: HomeView
     },
     {
-        name: 'timestamp-tool',
-        path: '/timestamp-tool',
+        name: 'timestamp',
+        path: '/timestamp',
         component: TimestampTool
     },
     {
-        name: 'json-formatter',
-        path: '/json-formatter',
+        name: 'json',
+        path: '/json',
         component: JsonFormatter
     },
     {
-        path: '/:pathMatch(.*)*',
-        redirect: '/login',
-        name: 'NotFount',
-    }
+        name: 'password',
+        path: '/password',
+        component: RandomPassword
+    },
 ]
 
 const router = createRouter({

@@ -5,6 +5,9 @@
       <!-- TODO https://blog.csdn.net/weixin_46221428/article/details/133025603-->
       <router-link to="/timestamp-tool">时间戳转换</router-link>
       <router-link to="/json-formatter">JSON格式化</router-link>
+      <router-link to="/timestamp">时间戳转换</router-link>
+      <router-link to="/json">JSON格式化</router-link>
+      <router-link to="/password">随机密码</router-link>
     </nav>
   </div>
 </template>
