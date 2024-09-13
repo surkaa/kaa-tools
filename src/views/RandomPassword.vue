@@ -2,6 +2,7 @@
 import {computed, onMounted, reactive, ref, watch} from "vue";
 import generateSvg from "/src/assets/generate.svg";
 import {ElMessage} from "element-plus";
+import {Delete} from '@element-plus/icons-vue';
 
 const RandomPasswordLocalStorageKey = 'RandomPasswordLocalStorageArgs';
 
@@ -111,9 +112,13 @@ const deleteCopyHistory = (item: string) => {
 
 const isEmptyHistory = computed(() => args.copyHistory.length === 0);
 
+const removeAllHistory = () => {
+  args.copyHistory = [];
+}
+
 onMounted(() => {
-  generatePassword();
   loadArgs();
+  generatePassword();
 });
 </script>
 
@@ -144,6 +149,7 @@ onMounted(() => {
     <h2 v-if="!isEmptyHistory">复制历史</h2>
     <div class="flex-container">
       <el-tag
+          class="tag"
           v-for="item in args.copyHistory"
           :key="item"
           closable
@@ -151,6 +157,9 @@ onMounted(() => {
       >{{ item }}
       </el-tag>
     </div>
+    <el-icon v-if="!isEmptyHistory" :size="25" style="cursor:pointer;">
+      <Delete @click="removeAllHistory"/>
+    </el-icon>
   </div>
 </template>
 
@@ -162,6 +171,7 @@ onMounted(() => {
   align-items: center;
   width: 100vw;
   height: 100vh;
+  background-image: linear-gradient(to right, #43e97b 0%, #38f9d7 100%);
 
   .password {
     font-size: 24px;
@@ -210,6 +220,10 @@ onMounted(() => {
     justify-content: center;
     align-items: center;
     margin: 20px;
+
+    .tag {
+      margin: 4px;
+    }
   }
 }
 </style>
