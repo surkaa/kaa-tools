@@ -3,7 +3,9 @@ import {computed, onMounted, ref, watch} from "vue";
 import generateSvg from "/src/assets/generate.svg";
 import {ElMessage} from "element-plus";
 
-const passwordLength = ref(parseInt(localStorage.getItem('passwordLength') || '16'));
+const copyHistoryLocalStorageKey = 'copyHistory';
+const passwordLengthLocalStorageKey = 'password';
+const passwordLength = ref(parseInt(localStorage.getItem(passwordLengthLocalStorageKey) || '16'));
 const isContainLowercase = ref(true);
 const isContainUppercase = ref(true);
 const isContainNumber = ref(true);
@@ -58,23 +60,21 @@ const generatePassword = () => {
 }
 
 const copyPassword = () => {
-  const input = document.createElement('input');
-  input.value = password.value;
-  document.body.appendChild(input);
-  input.select();
-  document.execCommand('copy');
-  document.body.removeChild(input);
-  // 保存复制历史
-  const copyHistoryStr = localStorage.getItem('copyHistory');
-  if (copyHistoryStr) {
-    const copyHistoryArr = JSON.parse(copyHistoryStr);
-    copyHistoryArr.push(password.value);
-    localStorage.setItem('copyHistory', JSON.stringify(copyHistoryArr));
-  } else {
-    localStorage.setItem('copyHistory', JSON.stringify([password.value]));
-  }
-  copyHistory.value.push(password.value);
-  ElMessage.success('复制成功');
+  navigator.clipboard.writeText(password.value).then(() => {
+    // 保存复制历史
+    const copyHistoryStr = localStorage.getItem(copyHistoryLocalStorageKey);
+    if (copyHistoryStr) {
+      const copyHistoryArr = JSON.parse(copyHistoryStr);
+      copyHistoryArr.push(password.value);
+    } else {
+      localStorage.setItem(copyHistoryLocalStorageKey, JSON.stringify([password.value]));
+    }
+    copyHistory.value.push(password.value);
+    ElMessage.success('复制成功');
+  }).catch(err => {
+    ElMessage.error('复制失败');
+    console.error('复制失败:', err);
+  });
 }
 
 watch([
@@ -89,23 +89,23 @@ watch([
 
 watch(passwordLength, (newVal) => {
   // 保存到本地存储
-  localStorage.setItem('passwordLength', newVal.toString());
+  localStorage.setItem(passwordLengthLocalStorageKey, newVal.toString());
 });
 
 const loadCopyHistory = () => {
-  const copyHistoryStr = localStorage.getItem('copyHistory');
+  const copyHistoryStr = localStorage.getItem(copyHistoryLocalStorageKey);
   if (copyHistoryStr) {
     copyHistory.value = JSON.parse(copyHistoryStr);
   }
 }
 
 const deleteCopyHistory = (item: string) => {
-  const copyHistoryStr = localStorage.getItem('copyHistory');
+  const copyHistoryStr = localStorage.getItem(copyHistoryLocalStorageKey);
   if (copyHistoryStr) {
     const copyHistoryArr = JSON.parse(copyHistoryStr);
     const index = copyHistoryArr.indexOf(item);
     copyHistoryArr.splice(index, 1);
-    localStorage.setItem('copyHistory', JSON.stringify(copyHistoryArr));
+    localStorage.setItem(copyHistoryLocalStorageKey, JSON.stringify(copyHistoryArr));
     copyHistory.value = copyHistoryArr;
   }
 }
