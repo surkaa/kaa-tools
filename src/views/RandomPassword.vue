@@ -3,7 +3,7 @@ import {computed, onMounted, ref, watch} from "vue";
 import generateSvg from "/src/assets/generate.svg";
 import {ElMessage} from "element-plus";
 
-const passwordLength = ref(8);
+const passwordLength = ref(parseInt(localStorage.getItem('passwordLength') || '16'));
 const isContainLowercase = ref(true);
 const isContainUppercase = ref(true);
 const isContainNumber = ref(true);
@@ -86,6 +86,11 @@ watch([
     ],
     generatePassword
 );
+
+watch(passwordLength, (newVal) => {
+  // 保存到本地存储
+  localStorage.setItem('passwordLength', newVal.toString());
+});
 
 const loadCopyHistory = () => {
   const copyHistoryStr = localStorage.getItem('copyHistory');
