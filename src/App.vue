@@ -33,7 +33,7 @@
       width: fit-content;
       text-decoration: none;
       font-weight: bold;
-      padding: 12px 4rem;
+      padding: 12px 3rem;
     }
   }
 }
