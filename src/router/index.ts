@@ -3,6 +3,8 @@ import {createRouter, createWebHistory} from 'vue-router';
 import HomeView from "../views/HomeView.vue";
 import TimestampTool from "../views/TimestampTool.vue";
 import JsonFormatter from "../views/JsonFormatter.vue";
+import TranslateTool from "../views/TranslateTool.vue";
+import CompareContent from "../views/CompareContent.vue";
 import RandomPassword from "../views/RandomPassword.vue";
 
 const routes: RouteRecordRaw[] = [
@@ -20,6 +22,16 @@ const routes: RouteRecordRaw[] = [
         name: 'json',
         path: '/json',
         component: JsonFormatter
+    },
+    {
+        name: 'translate',
+        path: '/translate',
+        component: TranslateTool
+    },
+    {
+        name: 'compare',
+        path: '/compare',
+        component: CompareContent
     },
     {
         name: 'password',
