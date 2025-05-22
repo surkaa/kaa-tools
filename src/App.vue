@@ -1,13 +1,44 @@
+<script lang="ts" setup>
+import {useRouter} from "vue-router";
+import {computed} from "vue";
+
+const router = useRouter();
+
+// 过滤有效菜单项：包含meta.title且非首页的路由
+const menus = computed(() =>
+    router.getRoutes()
+        .filter(route => route.meta?.title && route.path !== '/')
+);
+
+// 单独处理首页路由
+const homeRoute = computed(() =>
+    router.getRoutes().find(route => route.path === '/')
+);
+</script>
+
 <template>
   <div id="main">
     <router-view/>
     <nav id="toolbar">
-      <!-- TODO https://blog.csdn.net/weixin_46221428/article/details/133025603-->
-      <router-link to="/timestamp">时间戳转换</router-link>
-      <router-link to="/json">JSON格式化</router-link>
-      <router-link to="/translate">翻译工具</router-link>
-      <router-link to="/compare">比较文本</router-link>
-      <router-link to="/password">随机密码</router-link>
+      <!-- 首页单独处理 -->
+      <router-link
+          v-if="homeRoute"
+          :to="homeRoute.path"
+          class="nav-item"
+      >
+        {{ homeRoute.meta?.title || '首页' }}
+      </router-link>
+
+      <!-- 动态生成其他菜单项 -->
+      <template v-for="menu in menus" :key="menu.name">
+        <router-link
+            :to="menu.path"
+            class="nav-item"
+            v-if="menu.meta?.title"
+        >
+          {{ menu.meta.title }}
+        </router-link>
+      </template>
     </nav>
   </div>
 </template>
@@ -34,6 +65,26 @@
       text-decoration: none;
       font-weight: bold;
       padding: 12px 3rem;
+    }
+
+    .nav-item {
+      color: #fff;
+      min-width: 100px; // 改为最小宽度适应不同标题长度
+      text-align: center;
+      text-decoration: none;
+      font-weight: bold;
+      padding: 12px 1.5rem; // 调整左右间距
+      transition: background 0.3s ease;
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+      }
+
+      &.router-link-exact-active {
+        color: #42b983;
+        background-color: rgba(66, 185, 131, 0.1);
+      }
     }
   }
 }
