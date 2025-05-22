@@ -99,6 +99,14 @@ const selectPage = (page: number) => {
   }
 }
 
+const clearSelected = () => {
+  selected.value = [];
+}
+
+const selectAll = () => {
+  selected.value = Array.from({length: pageCount.value}, (_, i) => i + 1);
+}
+
 // 添加页码格式化函数
 const formatPageNumbers = (pages: number[]): string => {
   if (pages.length === 0) return '';
@@ -193,7 +201,11 @@ onMounted(() => {
     <div id="operate">
       <input type="file" @change="inputChange" accept="application/pdf">
       <el-input-number v-if="pageCount > 0" v-model="renderScale" :step="0.1" label="缩略图大小" :max="0.8" :min="0.5"/>
-      <el-button v-if="selected.length > 0" @click="download">下载选中的{{ pageStr }}页</el-button>
+      <el-button-group class="selected-operate-group">
+        <el-button v-if="selected.length > 0" @click="clearSelected" type="danger">清除选中</el-button>
+        <el-button v-if="pageCount != selected.length" @click="selectAll" type="success">全选</el-button>
+      </el-button-group>
+      <el-button v-if="selected.length > 0" @click="download" type="primary">下载选中的{{ pageStr }}页</el-button>
     </div>
     <el-dialog v-model="showDetailDialog.visiable" :lock-scroll="false">
       <template #title>
@@ -298,6 +310,14 @@ onMounted(() => {
         border-color: #007bff;
         box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
       }
+    }
+
+    .selected-operate-group {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
     }
   }
 
