@@ -7,28 +7,30 @@ import dayjs from "dayjs";
 
 pdfLib.GlobalWorkerOptions.workerSrc = '../../node_modules/pdfjs-dist/build/pdf.worker.mjs';
 
-const pdfPages = ref(0);
-const pdfScale = ref(0.5);
+const pageCount = ref(0);
+const renderScale = ref(0.5);
 const selected = ref<number[]>([]);
 const pdfKey = ref(dayjs().valueOf());
+let pdf: PDFDocumentProxy | null = null;
 
-const renderPage = (num: number, pdfDoc: PDFDocumentProxy) => {
-  pdfDoc.getPage(num).then((page) => {
+const renderPage = (num: number) => {
+  if (!pdf) return;
+  pdf.getPage(num).then((page) => {
     const canvas = document.getElementById(`page-${num}`) as HTMLCanvasElement;
     const ctx = canvas.getContext('2d');
     if (!ctx) {
       ElMessage.error(`无法渲染第${num}页，退出渲染`);
       return;
     }
-    const viewport = page.getViewport({scale: pdfScale.value});
+    const viewport = page.getViewport({scale: renderScale.value});
     canvas.width = viewport.width;
     canvas.height = viewport.height;
     page.render({
       canvasContext: ctx,
       viewport
     });
-    if (num < pdfPages.value) {
-      nextTick(() => renderPage(num + 1, pdfDoc));
+    if (num < pageCount.value) {
+      nextTick(() => renderPage(num + 1));
     }
   })
 }
@@ -46,9 +48,10 @@ const inputChange = (e: any) => {
   loadingTask.promise.then(pdfDoc => {
     selected.value = [];
     pdfKey.value = dayjs().valueOf();
-    pdfPages.value = pdfDoc.numPages;
+    pageCount.value = pdfDoc.numPages;
+    pdf = pdfDoc;
     // 从第一页开始渲染
-    nextTick(() => renderPage(1, pdfDoc));
+    nextTick(() => renderPage(1));
   }).catch(_err => ElMessage.error('加载错误'));
 }
 </script>
@@ -56,8 +59,13 @@ const inputChange = (e: any) => {
 <template>
   <div id="cut-pdf">
     <div id="pdf-view">
-      <canvas v-for="page in pdfPages" :key="pdfKey + page" :id="`page-${page}`"/>
-      <div id="text-view"></div>
+      <div class="page" v-for="page in pageCount" :key="pdfKey + page">
+        <canvas :id="`page-${page}`">
+          <div class="magnify">
+            🔍
+          </div>
+        </canvas>
+      </div>
     </div>
     <div id="operate">
       <input type="file" @change="inputChange" accept="application/pdf">
@@ -84,6 +92,22 @@ const inputChange = (e: any) => {
     flex-wrap: wrap;
     gap: 0.5rem;
     padding: 1rem;
+
+    .page {
+
+      canvas {
+
+        &:hover {
+          .magnify {
+            display: block;
+          }
+        }
+
+        .magnify {
+          display: none;
+        }
+      }
+    }
   }
 
   #operate {
