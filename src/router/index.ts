@@ -1,43 +1,55 @@
 import type {RouteRecordRaw} from 'vue-router'
 import {createRouter, createWebHistory} from 'vue-router';
-import HomeView from "../views/HomeView.vue";
-import TimestampTool from "../views/TimestampTool.vue";
-import JsonFormatter from "../views/JsonFormatter.vue";
-import TranslateTool from "../views/TranslateTool.vue";
-import CompareContent from "../views/CompareContent.vue";
-import RandomPassword from "../views/RandomPassword.vue";
 
 const routes: RouteRecordRaw[] = [
     {
         name: 'home',
         path: '/',
-        component: HomeView
+        component: () => import('../views/HomeView.vue'),
+        meta: {
+            title: '首页'
+        }
     },
     {
         name: 'timestamp',
         path: '/timestamp',
-        component: TimestampTool
+        component: () => import('../views/TimestampTool.vue'),
+        meta: {
+            title: '时间戳转换'
+        }
     },
     {
         name: 'json',
         path: '/json',
-        component: JsonFormatter
+        component: () => import('../views/JsonFormatter.vue'),
+        meta: {
+            title: 'JSON格式化'
+        }
     },
     {
         name: 'translate',
         path: '/translate',
-        component: TranslateTool
+        component: () => import('../views/TranslateTool.vue'),
+        meta: {
+            title: '翻译工具'
+        }
     },
     {
         name: 'compare',
         path: '/compare',
-        component: CompareContent
+        component: () => import('../views/CompareContent.vue'),
+        meta: {
+            title: '比较文本'
+        }
     },
     {
         name: 'password',
         path: '/password',
-        component: RandomPassword
-    },
+        component: () => import('../views/RandomPassword.vue'),
+        meta: {
+            title: '随机密码'
+        }
+    }
 ]
 
 const router = createRouter({
