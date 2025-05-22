@@ -71,16 +71,31 @@ const showDetail = (page: number) => {
   }
   pdf.getPage(page).then((page) => {
     const canvas = document.getElementById('detail-page') as HTMLCanvasElement;
-    renderToCanvas(page, canvas, 2);
+    renderToCanvas(page, canvas, 3);
   });
+}
+
+const selectPage = (page: number) => {
+  if (selected.value.includes(page)) {
+    selected.value = selected.value.filter(p => p !== page);
+  } else {
+    selected.value.push(page);
+  }
+}
+
+const download = () => {
+
 }
 </script>
 
 <template>
   <div id="cut-pdf">
     <div id="pdf-view">
-      <div class="page" v-for="page in pageCount" :key="pdfKey + page">
-        <canvas :id="`page-${page}`"/>
+      <div
+          v-for="page in pageCount" :key="pdfKey + page"
+          class="page" :class="{'selected': selected.includes(page)}"
+      >
+        <canvas :id="`page-${page}`" @click="selectPage(page)"/>
         <div class="magnify" @click="showDetail(page)">
           🔍
         </div>
@@ -88,6 +103,7 @@ const showDetail = (page: number) => {
     </div>
     <div id="operate">
       <input type="file" @change="inputChange" accept="application/pdf">
+      <el-button v-if="selected.length > 0" @click="download">下载选中的</el-button>
     </div>
     <el-dialog v-model="showDetailDialog.visiable" :lock-scroll="false">
       <template #title>
@@ -120,16 +136,27 @@ const showDetail = (page: number) => {
     flex: 1;
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 1.5rem;
     padding: 1rem;
 
     .page {
       position: relative;
+      box-sizing: border-box;
+      margin: 4px;
 
       &:hover {
         .magnify {
           display: block;
         }
+      }
+
+      &.selected {
+        //background-color: rgba(0, 123, 255, 0.1);
+        //border: 2px solid #007bff;
+        // 其他效果
+        box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+        transform: scale(1.08);
+        transition: .3s;
       }
 
       .magnify {
