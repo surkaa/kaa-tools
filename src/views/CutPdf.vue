@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import * as pdfLib from "pdfjs-dist";
+import {PDFDocument} from "pdf-lib";
 import {PDFDocumentProxy, PDFPageProxy} from "pdfjs-dist";
 import {nextTick, ref} from "vue";
 import {ElMessage} from "element-plus";
@@ -16,6 +17,7 @@ const showDetailDialog = ref({
   visiable: false,
   page: 0,
 });
+const originalPdfBytes = ref<ArrayBuffer | null>(null);
 
 const renderToCanvas = (page: PDFPageProxy, canvas: HTMLCanvasElement, scale: number) => {
   const ctx = canvas.getContext('2d');
@@ -46,6 +48,13 @@ const renderPage = (num: number) => {
 const inputChange = (e: any) => {
   const file = e.target.files[0];
   if (!file) return;
+
+  // 读取文件内容保存到originalPdfBytes
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    originalPdfBytes.value = e.target?.result as ArrayBuffer;
+  };
+  reader.readAsArrayBuffer(file);
 
   const url = URL.createObjectURL(file);
   const loadingTask = pdfLib.getDocument({
@@ -83,8 +92,40 @@ const selectPage = (page: number) => {
   }
 }
 
-const download = () => {
+const download = async () => {
+  if (!originalPdfBytes.value || selected.value.length === 0) {
+    ElMessage.error('请先选择文件并选中页面');
+    return;
+  }
+  try {
+    // 加载原始PDF
+    const originalPdf = await PDFDocument.load(originalPdfBytes.value);
+    // 创建新PDF文档
+    const newPdf = await PDFDocument.create();
+    // 按页码排序选中的页面
+    const sortedPages = selected.value.sort((a, b) => a - b);
 
+    // 复制每一页到新PDF
+    for (const pageNum of sortedPages) {
+      const [copiedPage] = await newPdf.copyPages(originalPdf, [pageNum - 1]); // 转换为0-based索引
+      newPdf.addPage(copiedPage);
+    }
+
+    // 生成PDF文件并下载
+    const pdfBytes = await newPdf.save();
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `selected-pages-${dayjs().format('YYYYMMDDHHmmss')}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    ElMessage.error('生成PDF失败');
+    console.error(err);
+  }
 }
 </script>
 
