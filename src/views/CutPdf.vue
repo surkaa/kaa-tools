@@ -201,8 +201,8 @@ onMounted(() => {
     <div id="operate">
       <input type="file" @change="inputChange" accept="application/pdf">
       <div class="scale">
-        <label for="scale-input-number">缩略图大小： </label>
-        <el-input-number id="scale-input-number" v-if="pageCount > 0" v-model="renderScale" :step="0.1" :max="0.9" :min="0.3"/>
+        <label for="scale-input-number" v-if="pageCount > 0">缩略图大小： </label>
+        <el-input-number id="scale-input-number" v-model="renderScale" :step="0.1" :max="0.9" :min="0.3"/>
       </div>
       <el-button-group class="selected-operate-group">
         <el-button v-if="selected.length > 0" @click="clearSelected" type="danger">清除选中</el-button>
