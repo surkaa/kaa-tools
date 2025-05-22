@@ -3,12 +3,8 @@
 </script>
 
 <template>
-  <div id="cut-pdf" class="fill-flex">
-    <div class="page-toolbar"></div>
-    <div class="page-content">
-      cut-pdf
-    </div>
-    <div class="page-footer"></div>
+  <div id="cut-pdf">
+
   </div>
 </template>
 
