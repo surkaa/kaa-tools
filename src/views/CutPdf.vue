@@ -183,7 +183,7 @@ onMounted(() => {
     </div>
     <div id="operate">
       <input type="file" @change="inputChange" accept="application/pdf">
-      <el-input-number v-if="pageCount > 0" v-model="renderScale" :step="0.1" label="缩略图大小" :max="1"/>
+      <el-input-number v-if="pageCount > 0" v-model="renderScale" :step="0.1" label="缩略图大小" :max="0.8" :min="0.5"/>
       <el-button v-if="selected.length > 0" @click="download">下载选中的{{pageStr}}页</el-button>
     </div>
     <el-dialog v-model="showDetailDialog.visiable" :lock-scroll="false">
