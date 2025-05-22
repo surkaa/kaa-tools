@@ -6,7 +6,10 @@ import {computed, nextTick, onMounted, ref, watch} from "vue";
 import {ElMessage} from "element-plus";
 import dayjs from "dayjs";
 
-pdfLib.GlobalWorkerOptions.workerSrc = '../../node_modules/pdfjs-dist/build/pdf.worker.mjs';
+pdfLib.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.mjs',
+    import.meta.url
+).toString();
 
 let pdf: PDFDocumentProxy | null = null;
 const pageCount = ref(0);
