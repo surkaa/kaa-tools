@@ -7,7 +7,7 @@ import {ElMessage} from "element-plus";
 pdfLib.GlobalWorkerOptions.workerSrc = '../../node_modules/pdfjs-dist/build/pdf.worker.mjs';
 
 const pdfPages = ref(0);
-const pdfScale = ref(2);
+const pdfScale = ref(0.5);
 const selected = ref<number[]>([]);
 
 const renderPage = (num: number, pdfDoc: PDFDocumentProxy) => {
@@ -70,6 +70,7 @@ const inputChange = (e: any) => {
     overflow: auto;
     display: flex;
     flex-wrap: wrap;
+    gap: 0.5rem;
   }
 }
 </style>
