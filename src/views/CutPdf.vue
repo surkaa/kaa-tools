@@ -18,6 +18,7 @@ const showDetailDialog = ref({
   page: 0,
 });
 const originalPdfBytes = ref<ArrayBuffer | null>(null);
+const originalFileName = ref('');
 
 const renderToCanvas = (page: PDFPageProxy, canvas: HTMLCanvasElement, scale: number) => {
   const ctx = canvas.getContext('2d');
@@ -48,6 +49,8 @@ const renderPage = (num: number) => {
 const inputChange = (e: any) => {
   const file = e.target.files[0];
   if (!file) return;
+
+  originalFileName.value = file.name.replace(/.pdf$/i, '');
 
   // 读取文件内容保存到originalPdfBytes
   const reader = new FileReader();
@@ -92,6 +95,28 @@ const selectPage = (page: number) => {
   }
 }
 
+// 添加页码格式化函数
+const formatPageNumbers = (pages: number[]): string => {
+  if (pages.length === 0) return '';
+
+  const sorted = [...pages].sort((a, b) => a - b);
+  const result: string[] = [];
+  let start = sorted[0];
+  let end = sorted[0];
+
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i] === end + 1) {
+      end = sorted[i];
+    } else {
+      result.push(start === end ? `${start}` : `${start}_${end}`);
+      start = end = sorted[i];
+    }
+  }
+  result.push(start === end ? `${start}` : `${start}_${end}`);
+
+  return result.join(',');
+};
+
 const download = async () => {
   if (!originalPdfBytes.value || selected.value.length === 0) {
     ElMessage.error('请先选择文件并选中页面');
@@ -113,11 +138,17 @@ const download = async () => {
 
     // 生成PDF文件并下载
     const pdfBytes = await newPdf.save();
+
+    // 生成文件名
+    const pageStr = formatPageNumbers(selected.value);
+    const baseName = originalFileName.value || 'document';
+    const fileName = `${baseName}-${pageStr}.pdf`;
+
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `selected-pages-${dayjs().format('YYYYMMDDHHmmss')}.pdf`;
+    link.download = fileName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
