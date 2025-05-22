@@ -1,34 +1,42 @@
 <script setup lang="ts">
 import * as pdfLib from "pdfjs-dist";
-import {PDFDocumentProxy} from "pdfjs-dist";
+import {PDFDocumentProxy, PDFPageProxy} from "pdfjs-dist";
 import {nextTick, ref} from "vue";
 import {ElMessage} from "element-plus";
 import dayjs from "dayjs";
 
 pdfLib.GlobalWorkerOptions.workerSrc = '../../node_modules/pdfjs-dist/build/pdf.worker.mjs';
 
+let pdf: PDFDocumentProxy | null = null;
 const pageCount = ref(0);
 const renderScale = ref(0.5);
 const selected = ref<number[]>([]);
 const pdfKey = ref(dayjs().valueOf());
-let pdf: PDFDocumentProxy | null = null;
+const showDetailDialog = ref({
+  visiable: false,
+  page: 0,
+});
+
+const renderToCanvas = (page: PDFPageProxy, canvas: HTMLCanvasElement, scale: number) => {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    ElMessage.error('无法渲染页面，退出渲染');
+    return;
+  }
+  const viewport = page.getViewport({scale});
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  page.render({
+    canvasContext: ctx,
+    viewport
+  });
+}
 
 const renderPage = (num: number) => {
   if (!pdf) return;
   pdf.getPage(num).then((page) => {
     const canvas = document.getElementById(`page-${num}`) as HTMLCanvasElement;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      ElMessage.error(`无法渲染第${num}页，退出渲染`);
-      return;
-    }
-    const viewport = page.getViewport({scale: renderScale.value});
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    page.render({
-      canvasContext: ctx,
-      viewport
-    });
+    renderToCanvas(page, canvas, renderScale.value);
     if (num < pageCount.value) {
       nextTick(() => renderPage(num + 1));
     }
@@ -57,6 +65,14 @@ const inputChange = (e: any) => {
 
 const showDetail = (page: number) => {
   if (!pdf) return;
+  showDetailDialog.value = {
+    visiable: true,
+    page,
+  }
+  pdf.getPage(page).then((page) => {
+    const canvas = document.getElementById('detail-page') as HTMLCanvasElement;
+    renderToCanvas(page, canvas, 2);
+  });
 }
 </script>
 
@@ -73,6 +89,17 @@ const showDetail = (page: number) => {
     <div id="operate">
       <input type="file" @change="inputChange" accept="application/pdf">
     </div>
+    <el-dialog v-model="showDetailDialog.visiable" :lock-scroll="false">
+      <template #title>
+        <span>第{{ showDetailDialog.page + 1 }}页</span>
+      </template>
+      <div class="dialog-canvas">
+        <canvas id="detail-page" style="max-width: 100%; max-height: 100%;"/>
+      </div>
+      <template #footer>
+        <el-button @click="showDetailDialog.visiable = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -139,6 +166,14 @@ const showDetail = (page: number) => {
         box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
       }
     }
+  }
+
+  .dialog-canvas {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
 }
 </style>
