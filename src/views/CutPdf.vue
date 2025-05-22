@@ -3,12 +3,14 @@ import * as pdfLib from "pdfjs-dist";
 import {PDFDocumentProxy} from "pdfjs-dist";
 import {nextTick, ref} from "vue";
 import {ElMessage} from "element-plus";
+import dayjs from "dayjs";
 
 pdfLib.GlobalWorkerOptions.workerSrc = '../../node_modules/pdfjs-dist/build/pdf.worker.mjs';
 
 const pdfPages = ref(0);
 const pdfScale = ref(0.5);
 const selected = ref<number[]>([]);
+const pdfKey = ref(dayjs().valueOf());
 
 const renderPage = (num: number, pdfDoc: PDFDocumentProxy) => {
   pdfDoc.getPage(num).then((page) => {
@@ -43,6 +45,7 @@ const inputChange = (e: any) => {
   });
   loadingTask.promise.then(pdfDoc => {
     selected.value = [];
+    pdfKey.value = dayjs().valueOf();
     pdfPages.value = pdfDoc.numPages;
     // 从第一页开始渲染
     nextTick(() => renderPage(1, pdfDoc));
@@ -54,7 +57,7 @@ const inputChange = (e: any) => {
   <div id="cut-pdf">
     <input type="file" @change="inputChange" accept="application/pdf">
     <div id="pdf-view">
-      <canvas v-for="page in pdfPages" :key="page" :id="`page-${page}`"/>
+      <canvas v-for="page in pdfPages" :key="pdfKey + page" :id="`page-${page}`"/>
       <div id="text-view"></div>
     </div>
   </div>
