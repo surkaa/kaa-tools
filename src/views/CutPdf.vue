@@ -13,7 +13,11 @@ const selected = ref<number[]>([]);
 const renderPage = (num: number, pdfDoc: PDFDocumentProxy) => {
   pdfDoc.getPage(num).then((page) => {
     const canvas = document.getElementById(`page-${num}`) as HTMLCanvasElement;
-    const ctx = canvas.getContext('2d')!!;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      ElMessage.error(`无法渲染第${num}页，退出渲染`);
+      return;
+    }
     const viewport = page.getViewport({scale: pdfScale.value});
     canvas.width = viewport.width;
     canvas.height = viewport.height;
