@@ -52,6 +52,10 @@ const homeRoute = computed(() =>
 
 <style scoped lang="scss">
 #main {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
