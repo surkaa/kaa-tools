@@ -15,6 +15,7 @@
     "axios": "^1.6.5",
     "dayjs": "^1.11.11",
     "element-plus": "^2.5.1",
+    "pdfjs-dist": "^5.2.133",
     "pinia": "^2.1.7",
     "primeicons": "^7.0.0",
     "primevue": "^4.0.4",
