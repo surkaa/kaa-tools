@@ -179,6 +179,7 @@ onMounted(() => {
           class="page" :class="{'selected': selected.includes(page)}"
       >
         <canvas :id="`page-${page}`" @click="selectPage(page)"/>
+        <span class="page-number" v-text="page"/>
         <div class="hover-show">
           <div class="checkbox" @click="selectPage(page)">
             <input type="checkbox" :checked="selected.includes(page)"/>
@@ -231,8 +232,15 @@ onMounted(() => {
     .page {
       position: relative;
       margin: 4px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      transition: .3s;
 
       &:hover {
+        transform: scale(1.03);
+
         .hover-show {
           display: flex;
         }
@@ -256,6 +264,10 @@ onMounted(() => {
 
       .magnify {
         cursor: pointer;
+      }
+
+      .page-number {
+        margin-top: 4px;
       }
     }
   }
