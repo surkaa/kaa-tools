@@ -54,17 +54,20 @@ const inputChange = (e: any) => {
     nextTick(() => renderPage(1));
   }).catch(_err => ElMessage.error('加载错误'));
 }
+
+const showDetail = (page: number) => {
+  if (!pdf) return;
+}
 </script>
 
 <template>
   <div id="cut-pdf">
     <div id="pdf-view">
       <div class="page" v-for="page in pageCount" :key="pdfKey + page">
-        <canvas :id="`page-${page}`">
-          <div class="magnify">
-            🔍
-          </div>
-        </canvas>
+        <canvas :id="`page-${page}`"/>
+        <div class="magnify" @click="showDetail(page)">
+          🔍
+        </div>
       </div>
     </div>
     <div id="operate">
@@ -94,18 +97,20 @@ const inputChange = (e: any) => {
     padding: 1rem;
 
     .page {
+      position: relative;
 
-      canvas {
-
-        &:hover {
-          .magnify {
-            display: block;
-          }
-        }
-
+      &:hover {
         .magnify {
-          display: none;
+          display: block;
         }
+      }
+
+      .magnify {
+        display: none;
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        cursor: pointer;
       }
     }
   }
