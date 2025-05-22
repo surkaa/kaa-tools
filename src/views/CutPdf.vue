@@ -55,10 +55,12 @@ const inputChange = (e: any) => {
 
 <template>
   <div id="cut-pdf">
-    <input type="file" @change="inputChange" accept="application/pdf">
     <div id="pdf-view">
       <canvas v-for="page in pdfPages" :key="pdfKey + page" :id="`page-${page}`"/>
       <div id="text-view"></div>
+    </div>
+    <div id="operate">
+      <input type="file" @change="inputChange" accept="application/pdf">
     </div>
   </div>
 </template>
@@ -68,12 +70,46 @@ const inputChange = (e: any) => {
   width: 100%;
   height: 100%;
   background-image: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
 
   #pdf-view {
+    max-height: 100%;
+    width: 100%;
     overflow: auto;
+    flex: 1;
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+    padding: 1rem;
+  }
+
+  #operate {
+    width: clamp(300px, 20vw, 500px);
+    height: 100%;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid #ccc;
+
+    input {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background-color: #fff;
+      color: #333;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+
+      &:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+      }
+    }
   }
 }
 </style>
