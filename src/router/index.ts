@@ -19,29 +19,37 @@ const routes: RouteRecordRaw[] = [
         }
     },
     {
-        name: 'json',
-        path: '/json',
-        component: () => import('../views/JsonFormatter.vue'),
+        name: 'cut-pdf',
+        path: '/cut-pdf',
+        component: () => import('../views/CutPdf.vue'),
         meta: {
-            title: 'JSON格式化'
+            title: 'PDF裁剪'
         }
     },
-    {
-        name: 'translate',
-        path: '/translate',
-        component: () => import('../views/TranslateTool.vue'),
-        meta: {
-            title: '翻译工具'
-        }
-    },
-    {
-        name: 'compare',
-        path: '/compare',
-        component: () => import('../views/CompareContent.vue'),
-        meta: {
-            title: '比较文本'
-        }
-    },
+    // {
+    //     name: 'json',
+    //     path: '/json',
+    //     component: () => import('../views/JsonFormatter.vue'),
+    //     meta: {
+    //         title: 'JSON格式化'
+    //     }
+    // },
+    // {
+    //     name: 'translate',
+    //     path: '/translate',
+    //     component: () => import('../views/TranslateTool.vue'),
+    //     meta: {
+    //         title: '翻译工具'
+    //     }
+    // },
+    // {
+    //     name: 'compare',
+    //     path: '/compare',
+    //     component: () => import('../views/CompareContent.vue'),
+    //     meta: {
+    //         title: '比较文本'
+    //     }
+    // },
     {
         name: 'password',
         path: '/password',
