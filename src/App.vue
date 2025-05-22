@@ -1,8 +1,9 @@
 <script lang="ts" setup>
-import {useRouter} from "vue-router";
+import {useRoute, useRouter} from "vue-router";
 import {computed} from "vue";
 
 const router = useRouter();
+const route = useRoute();
 
 // 过滤有效菜单项：包含meta.title且非首页的路由
 const menus = computed(() =>
@@ -18,7 +19,13 @@ const homeRoute = computed(() =>
 
 <template>
   <div id="main">
-    <router-view/>
+    <router-view v-slot="{ Component }">
+      <transition name="fade-transform" mode="out-in">
+        <keep-alive>
+          <component :key="route.path" :is="Component"/>
+        </keep-alive>
+      </transition>
+    </router-view>
     <nav id="toolbar">
       <!-- 首页单独处理 -->
       <router-link
@@ -47,6 +54,22 @@ const homeRoute = computed(() =>
 #main {
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+
+  .fade-transform-leave-active,
+  .fade-transform-enter-active {
+    transition: all .3s;
+  }
+
+  .fade-transform-enter {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+
+  .fade-transform-leave-to {
+    opacity: 0;
+    transform: translateX(30px);
+  }
 
   #toolbar {
     position: absolute;
