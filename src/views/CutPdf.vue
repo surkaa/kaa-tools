@@ -248,10 +248,11 @@ onMounted(() => {
       justify-content: center;
       align-items: center;
       flex-direction: column;
-      transition: .3s;
 
       &:hover {
-        transform: scale(1.03);
+        canvas {
+          transform: scale(1.03);
+        }
 
         .hover-show {
           display: flex;
@@ -262,6 +263,10 @@ onMounted(() => {
         .hover-show {
           display: flex;
         }
+      }
+
+      canvas {
+        transition: .3s;
       }
 
       .hover-show {
@@ -279,7 +284,7 @@ onMounted(() => {
       }
 
       .page-number {
-        margin-top: 4px;
+        margin-top: 6px;
       }
     }
   }
