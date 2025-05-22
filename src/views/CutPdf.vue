@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import * as pdfLib from "pdfjs-dist";
-import {PDFDocument} from "pdf-lib";
 import {PDFDocumentProxy, PDFPageProxy} from "pdfjs-dist";
-import {nextTick, ref} from "vue";
+import {PDFDocument} from "pdf-lib";
+import {computed, nextTick, onMounted, ref, watch} from "vue";
 import {ElMessage} from "element-plus";
 import dayjs from "dayjs";
 
@@ -19,6 +19,7 @@ const showDetailDialog = ref({
 });
 const originalPdfBytes = ref<ArrayBuffer | null>(null);
 const originalFileName = ref('');
+const pageStr = computed(() => formatPageNumbers(selected.value));
 
 const renderToCanvas = (page: PDFPageProxy, canvas: HTMLCanvasElement, scale: number) => {
   const ctx = canvas.getContext('2d');
@@ -112,7 +113,7 @@ const formatPageNumbers = (pages: number[]): string => {
       start = end = sorted[i];
     }
   }
-  result.push(start === end ? `${start}` : `${start}_${end}`);
+  result.push(start === end ? `${start}` : `${start}~${end}`);
 
   return result.join(',');
 };
@@ -140,9 +141,8 @@ const download = async () => {
     const pdfBytes = await newPdf.save();
 
     // 生成文件名
-    const pageStr = formatPageNumbers(selected.value);
     const baseName = originalFileName.value || 'document';
-    const fileName = `${baseName}-${pageStr}.pdf`;
+    const fileName = `${baseName}-${pageStr.value}.pdf`;
 
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
     const url = URL.createObjectURL(blob);
@@ -158,6 +158,14 @@ const download = async () => {
     console.error(err);
   }
 }
+
+onMounted(() => {
+  watch(renderScale, () => {
+    pdfKey.value = dayjs().valueOf();
+    // 从第一页开始渲染
+    nextTick(() => renderPage(1));
+  });
+});
 </script>
 
 <template>
@@ -175,7 +183,8 @@ const download = async () => {
     </div>
     <div id="operate">
       <input type="file" @change="inputChange" accept="application/pdf">
-      <el-button v-if="selected.length > 0" @click="download">下载选中的</el-button>
+      <el-input-number v-if="pageCount > 0" v-model="renderScale" :step="0.1" label="缩略图大小" :max="1"/>
+      <el-button v-if="selected.length > 0" @click="download">下载选中的{{pageStr}}页</el-button>
     </div>
     <el-dialog v-model="showDetailDialog.visiable" :lock-scroll="false">
       <template #title>
@@ -248,6 +257,7 @@ const download = async () => {
     display: flex;
     flex-direction: column;
     border-left: 1px solid #ccc;
+    gap: 1rem;
 
     input {
       width: 100%;
