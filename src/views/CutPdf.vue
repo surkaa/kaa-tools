@@ -109,7 +109,7 @@ const formatPageNumbers = (pages: number[]): string => {
     if (sorted[i] === end + 1) {
       end = sorted[i];
     } else {
-      result.push(start === end ? `${start}` : `${start}_${end}`);
+      result.push(start === end ? `${start}` : `${start}~${end}`);
       start = end = sorted[i];
     }
   }
@@ -144,7 +144,7 @@ const download = async () => {
     const baseName = originalFileName.value || 'document';
     const fileName = `${baseName}-${pageStr.value}.pdf`;
 
-    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const blob = new Blob([pdfBytes], {type: 'application/pdf'});
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -176,15 +176,20 @@ onMounted(() => {
           class="page" :class="{'selected': selected.includes(page)}"
       >
         <canvas :id="`page-${page}`" @click="selectPage(page)"/>
-        <div class="magnify" @click="showDetail(page)">
-          🔍
+        <div class="hover-show">
+          <div class="checkbox" @click="selectPage(page)">
+            <input type="checkbox" :checked="selected.includes(page)"/>
+          </div>
+          <div class="magnify" @click="showDetail(page)">
+            🔍
+          </div>
         </div>
       </div>
     </div>
     <div id="operate">
       <input type="file" @change="inputChange" accept="application/pdf">
       <el-input-number v-if="pageCount > 0" v-model="renderScale" :step="0.1" label="缩略图大小" :max="0.8" :min="0.5"/>
-      <el-button v-if="selected.length > 0" @click="download">下载选中的{{pageStr}}页</el-button>
+      <el-button v-if="selected.length > 0" @click="download">下载选中的{{ pageStr }}页</el-button>
     </div>
     <el-dialog v-model="showDetailDialog.visiable" :lock-scroll="false">
       <template #title>
@@ -222,29 +227,31 @@ onMounted(() => {
 
     .page {
       position: relative;
-      box-sizing: border-box;
       margin: 4px;
 
       &:hover {
-        .magnify {
-          display: block;
+        .hover-show {
+          display: flex;
         }
       }
 
       &.selected {
-        //background-color: rgba(0, 123, 255, 0.1);
-        //border: 2px solid #007bff;
-        // 其他效果
-        box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
-        transform: scale(1.08);
-        transition: .3s;
+        .hover-show {
+          display: flex;
+        }
+      }
+
+      .hover-show {
+        display: none;
+        position: absolute;
+        top: 0;
+        right: 0;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
       }
 
       .magnify {
-        display: none;
-        position: absolute;
-        top: 4px;
-        right: 4px;
         cursor: pointer;
       }
     }
@@ -258,6 +265,8 @@ onMounted(() => {
     flex-direction: column;
     border-left: 1px solid #ccc;
     gap: 1rem;
+    justify-content: flex-start;
+    align-items: center;
 
     input {
       width: 100%;
