@@ -63,6 +63,11 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
     history: createWebHistory(import.meta.env.VITE_BASE_URL),
     routes: routes,
-})
+});
+
+router.beforeEach((to, _from, next) => {
+    document.title = to.meta.title as string || '工具箱';
+    next();
+});
 
 export default router
