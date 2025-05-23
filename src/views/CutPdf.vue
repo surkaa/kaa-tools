@@ -50,8 +50,9 @@ const renderPage = (num: number) => {
   })
 }
 
-const inputChange = (e: any) => {
-  const file = e.target.files[0];
+const inputChange = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  const file = target.files?.[0];
   if (!file) return;
 
   originalFileName.value = file.name.replace(/.pdf$/i, '');
