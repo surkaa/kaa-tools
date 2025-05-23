@@ -17,7 +17,7 @@ const renderScale = ref(0.5);
 const selected = ref<number[]>([]);
 const pdfKey = ref(dayjs().valueOf());
 const showDetailDialog = ref({
-  visiable: false,
+  visible: false,
   page: 0,
 });
 const originalPdfBytes = ref<ArrayBuffer | null>(null);
@@ -83,7 +83,7 @@ const inputChange = (e: Event) => {
 const showDetail = (page: number) => {
   if (!pdf) return;
   showDetailDialog.value = {
-    visiable: true,
+    visible: true,
     page,
   }
   pdf.getPage(page).then((page) => {
@@ -211,7 +211,7 @@ onMounted(() => {
       </el-button-group>
       <el-button v-show="selected.length > 0" @click="download" type="primary">下载选中的{{ pageStr }}页</el-button>
     </div>
-    <el-dialog v-model="showDetailDialog.visiable" :lock-scroll="false">
+    <el-dialog v-model="showDetailDialog.visible" :lock-scroll="false">
       <template #title>
         <span>第{{ showDetailDialog.page + 1 }}页</span>
       </template>
@@ -219,7 +219,7 @@ onMounted(() => {
         <canvas id="detail-page" style="max-width: 100%; max-height: 100%;"/>
       </div>
       <template #footer>
-        <el-button @click="showDetailDialog.visiable = false">关闭</el-button>
+        <el-button @click="showDetailDialog.visible = false">关闭</el-button>
       </template>
     </el-dialog>
   </div>
