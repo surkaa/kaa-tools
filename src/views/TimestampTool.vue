@@ -229,7 +229,7 @@ onUnmounted(() => {
             <div class="current-timestamp">
               <span>{{ timer }}</span>
               <el-button
-                  type="text"
+                  link
                   title="点击暂停/继续实时时间戳"
                   class="current-timestamp-btn"
                   @click="stopLive = !stopLive"
