@@ -1,5 +1,6 @@
 import type {RouteRecordRaw} from 'vue-router'
 import {createRouter, createWebHistory} from 'vue-router';
+import NProgress from 'nprogress';
 
 const routes: RouteRecordRaw[] = [
     {
@@ -65,9 +66,18 @@ const router = createRouter({
     routes: routes,
 });
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach((to, from, next) => {
+    console.log(`${from.path} => ${to.path}`);
+    NProgress.start() // 开始加载进度条
     document.title = to.meta.title as string || '工具箱';
     next();
+});
+
+router.afterEach(() => NProgress.done());
+
+router.onError((error) => {
+    NProgress.done() // 发生错误时也结束进度条
+    console.error('路由错误:', error)
 });
 
 export default router
