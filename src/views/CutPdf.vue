@@ -199,16 +199,16 @@ onMounted(() => {
       </div>
     </div>
     <div id="operate">
-      <input type="file" @change="inputChange" accept="application/pdf">
-      <div class="scale" v-if="pageCount > 0">
+      <input type="file" @change="inputChange" accept="application/pdf"/>
+      <div class="scale" v-show="pageCount > 0">
         <label for="scale-input-number">缩略图大小： </label>
         <el-input-number id="scale-input-number" v-model="renderScale" :step="0.1" :max="0.9" :min="0.3"/>
       </div>
       <el-button-group class="selected-operate-group">
-        <el-button v-if="selected.length > 0" @click="clearSelected" type="danger">清除选中</el-button>
-        <el-button v-if="pageCount != selected.length" @click="selectAll" type="success">全选</el-button>
+        <el-button v-show="selected.length > 0" @click="clearSelected" type="danger">清除选中</el-button>
+        <el-button v-show="pageCount != selected.length" @click="selectAll" type="success">全选</el-button>
       </el-button-group>
-      <el-button v-if="selected.length > 0" @click="download" type="primary">下载选中的{{ pageStr }}页</el-button>
+      <el-button v-show="selected.length > 0" @click="download" type="primary">下载选中的{{ pageStr }}页</el-button>
     </div>
     <el-dialog v-model="showDetailDialog.visiable" :lock-scroll="false">
       <template #title>
