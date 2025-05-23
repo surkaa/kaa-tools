@@ -48,7 +48,10 @@ const renderPage = (num: number) => {
     if (num < pageCount.value) {
       nextTick(() => renderPage(num + 1));
     }
-  })
+  }).catch((err) => {
+    console.error('渲染错误', err);
+    ElMessage.error(`渲染第${num}页出现错误`);
+  });
 }
 
 const inputChange = (e: Event) => {
