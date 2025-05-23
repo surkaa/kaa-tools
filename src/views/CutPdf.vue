@@ -15,6 +15,7 @@ let pdf: PDFDocumentProxy | null = null;
 const pageCount = ref(0);
 const renderScale = ref(0.5);
 const selected = ref<number[]>([]);
+const renderSuccessList = ref<number[]>([]); // 用于存储渲染成功的页面
 const pdfKey = ref(dayjs().valueOf());
 const showDetailDialog = ref({
   visible: false,
@@ -45,6 +46,8 @@ const renderPage = (num: number) => {
   pdf.getPage(num).then((page) => {
     const canvas = document.getElementById(`page-${num}`) as HTMLCanvasElement;
     renderToCanvas(page, canvas, renderScale.value);
+    // 渲染成功的页面加入列表
+    renderSuccessList.value.push(num);
     if (num < pageCount.value) {
       nextTick(() => renderPage(num + 1));
     }
@@ -79,6 +82,8 @@ const inputChange = (e: Event) => {
     pdfKey.value = dayjs().valueOf();
     pageCount.value = pdfDoc.numPages;
     pdf = pdfDoc;
+    // 渲染成功的页面列表清空
+    renderSuccessList.value = [];
     // 从第一页开始渲染
     nextTick(() => renderPage(1));
   }).catch(_err => ElMessage.error('加载错误'))
@@ -199,7 +204,7 @@ onMounted(() => {
     <div id="pdf-view">
       <div
           v-for="page in pageCount" :key="pdfKey + page"
-          class="page" :class="{'selected': selected.includes(page)}"
+          class="page" :class="{'selected': selected.includes(page), 'rendering': !renderSuccessList.includes(page)}"
       >
         <canvas :id="`page-${page}`" @click="selectPage(page)"/>
         <span class="page-number" v-text="page"/>
@@ -280,6 +285,16 @@ onMounted(() => {
       &.selected {
         .hover-show {
           display: flex;
+        }
+      }
+
+      &.rendering {
+        .hover-show {
+          display: none;
+        }
+
+        .page-number {
+          display: none;
         }
       }
 
