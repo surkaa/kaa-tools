@@ -262,7 +262,7 @@ onMounted(() => {
     display: flex;
     flex-wrap: wrap;
     gap: 1.5rem;
-    padding: 1rem;
+    padding: 3rem 1rem;
 
     .page {
       position: relative;
