@@ -23,6 +23,7 @@ const showDetailDialog = ref({
 const originalPdfBytes = ref<ArrayBuffer | null>(null);
 const originalFileName = ref('');
 const pageStr = computed(() => formatPageNumbers(selected.value));
+const dialogCanvas = ref<HTMLCanvasElement | null>(null);
 
 const renderToCanvas = (page: PDFPageProxy, canvas: HTMLCanvasElement, scale: number) => {
   const ctx = canvas.getContext('2d');
@@ -88,8 +89,11 @@ const showDetail = (page: number) => {
     page,
   }
   pdf.getPage(page).then((page) => {
-    const canvas = document.getElementById('detail-page') as HTMLCanvasElement;
-    renderToCanvas(page, canvas, 3);
+    if (!dialogCanvas.value) {
+      ElMessage.error('页面异常，请刷新页面然后重试');
+      return;
+    }
+    renderToCanvas(page, dialogCanvas.value, 3);
   });
 }
 
@@ -178,6 +182,12 @@ onMounted(() => {
     // 从第一页开始渲染
     nextTick(() => renderPage(1));
   });
+  // 在对话框关闭时释放canvas资源
+  watch(() => showDetailDialog.value.visible, (visible) => {
+    if (!visible && dialogCanvas.value) {
+      dialogCanvas.value.getContext('2d')?.clearRect(0, 0, dialogCanvas.value.width, dialogCanvas.value.height);
+    }
+  });
 });
 </script>
 
@@ -217,7 +227,7 @@ onMounted(() => {
         <span>第{{ showDetailDialog.page + 1 }}页</span>
       </template>
       <div class="dialog-canvas">
-        <canvas id="detail-page" style="max-width: 100%; max-height: 100%;"/>
+        <canvas ref="dialogCanvas" style="max-width: 100%; max-height: 100%;"/>
       </div>
       <template #footer>
         <el-button @click="showDetailDialog.visible = false">关闭</el-button>
