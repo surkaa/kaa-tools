@@ -5,6 +5,7 @@ import {PDFDocument} from "pdf-lib";
 import {computed, nextTick, onMounted, ref, watch} from "vue";
 import {ElMessage} from "element-plus";
 import dayjs from "dayjs";
+import NProgress from 'nprogress';
 
 pdfLib.GlobalWorkerOptions.workerSrc = new URL(
     'pdfjs-dist/build/pdf.worker.mjs',
@@ -26,7 +27,7 @@ const originalFileName = ref('');
 const pageStr = computed(() => formatPageNumbers(selected.value));
 const dialogCanvas = ref<HTMLCanvasElement | null>(null);
 
-const renderToCanvas = (page: PDFPageProxy, canvas: HTMLCanvasElement, scale: number) => {
+const renderToCanvas = async (page: PDFPageProxy, canvas: HTMLCanvasElement, scale: number) => {
   const ctx = canvas.getContext('2d');
   if (!ctx) {
     ElMessage.error('无法渲染页面，退出渲染');
@@ -35,26 +36,32 @@ const renderToCanvas = (page: PDFPageProxy, canvas: HTMLCanvasElement, scale: nu
   const viewport = page.getViewport({scale});
   canvas.width = viewport.width;
   canvas.height = viewport.height;
-  page.render({
+  await page.render({
     canvasContext: ctx,
     viewport
-  });
+  }).promise;
 }
 
-const renderPage = (num: number) => {
+const renderPage = async (num: number) => {
   if (!pdf) return;
-  pdf.getPage(num).then((page) => {
+  try {
+    const page = await pdf.getPage(num);
     const canvas = document.getElementById(`page-${num}`) as HTMLCanvasElement;
-    renderToCanvas(page, canvas, renderScale.value);
+    await renderToCanvas(page, canvas, renderScale.value);
     // 渲染成功的页面加入列表
     renderSuccessList.value.push(num);
     if (num < pageCount.value) {
-      nextTick(() => renderPage(num + 1));
+      const p = num / pageCount.value;
+      console.log(`渲染进度：${p}`);
+      NProgress.set(p);
+      await nextTick(() => renderPage(num + 1));
+    } else {
+      NProgress.done();
     }
-  }).catch((err) => {
+  } catch (err) {
     console.error('渲染错误', err);
     ElMessage.error(`渲染第${num}页出现错误`);
-  });
+  }
 }
 
 const inputChange = (e: Event) => {
@@ -84,6 +91,7 @@ const inputChange = (e: Event) => {
     pdf = pdfDoc;
     // 渲染成功的页面列表清空
     renderSuccessList.value = [];
+    NProgress.start();
     // 从第一页开始渲染
     nextTick(() => renderPage(1));
   }).catch(_err => ElMessage.error('加载错误'))
