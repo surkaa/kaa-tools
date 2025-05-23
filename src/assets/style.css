@@ -4,3 +4,15 @@ html, body, #app {
     margin: 0;
     padding: 0;
 }
+
+.title {
+    font-size: 3rem;
+    text-align: center;
+    color: #fff;
+    user-select: none;
+}
+
+button:focus {
+    /* 去掉按钮点击后鼠标移出的黑框 */
+    outline: unset;
+}
