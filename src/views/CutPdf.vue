@@ -77,7 +77,8 @@ const inputChange = (e: Event) => {
     pdf = pdfDoc;
     // 从第一页开始渲染
     nextTick(() => renderPage(1));
-  }).catch(_err => ElMessage.error('加载错误'));
+  }).catch(_err => ElMessage.error('加载错误'))
+      .finally(() => URL.revokeObjectURL(url)); // 释放URL对象
 }
 
 const showDetail = (page: number) => {
