@@ -226,7 +226,7 @@ onMounted(() => {
       <el-button v-show="selected.length > 0" @click="download" type="primary">下载选中的{{ pageStr }}页</el-button>
     </div>
     <el-dialog v-model="showDetailDialog.visible" :lock-scroll="false">
-      <template #title>
+      <template #header>
         <span>第{{ showDetailDialog.page + 1 }}页</span>
       </template>
       <div class="dialog-canvas">
