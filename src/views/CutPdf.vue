@@ -15,6 +15,16 @@ pdfLib.GlobalWorkerOptions.workerSrc = new URL(
 let pdf: PDFDocumentProxy | null = null;
 const pageCount = ref(0);
 const renderScale = ref(0.5);
+const scaleStep = computed(() => {
+  const s = renderScale.value;
+  if (0.5 <= s && s < 1) {
+    return 0.1;
+  } else if (s < 1.5) {
+    return 0.2;
+  } else {
+    return 0.3;
+  }
+})
 const selected = ref<number[]>([]);
 const renderSuccessList = ref<number[]>([]); // 用于存储渲染成功的页面
 const pdfKey = ref(dayjs().valueOf());
@@ -230,7 +240,7 @@ onMounted(() => {
       <input type="file" @change="inputChange" accept="application/pdf"/>
       <div class="scale" v-show="pageCount > 0">
         <label for="scale-input-number">缩略图大小： </label>
-        <el-input-number id="scale-input-number" v-model="renderScale" :step="0.1" :max="0.9" :min="0.3"/>
+        <el-input-number id="scale-input-number" v-model="renderScale" :step="scaleStep" :max="2" :min="0.5"/>
       </div>
       <el-button-group class="selected-operate-group">
         <el-button v-show="selected.length > 0" @click="clearSelected" type="danger">清除选中</el-button>
