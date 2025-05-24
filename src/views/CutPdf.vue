@@ -274,7 +274,7 @@ onMounted(() => {
 #cut-pdf {
   width: 100%;
   height: 100%;
-  background-image: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%);
+  background-image: linear-gradient(120deg, #d4fc79 0%, #96e6a1 100%);
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -289,6 +289,8 @@ onMounted(() => {
     flex-wrap: wrap;
     gap: 1.5rem;
     padding: 3rem 1rem;
+    justify-content: flex-start;
+    align-items: center;
 
     .page {
       position: relative;
