@@ -246,7 +246,15 @@ onMounted(() => {
         <el-button v-show="selected.length > 0" @click="clearSelected" type="danger">清除选中</el-button>
         <el-button v-show="pageCount != selected.length" @click="selectAll" type="success">全选</el-button>
       </el-button-group>
-      <el-button v-show="selected.length > 0" @click="download" type="primary">下载选中的{{ pageStr }}页</el-button>
+      <el-button
+          v-show="selected.length > 0"
+          @click="download"
+          :disabled="selected.length === pageCount"
+          :title="selected.length === pageCount ? '与原文件相同，无法下载' : ''"
+          type="primary"
+      >
+        下载选中的第{{ pageStr }}页
+      </el-button>
     </div>
     <el-dialog v-model="showDetailDialog.visible" :lock-scroll="false">
       <template #header>
