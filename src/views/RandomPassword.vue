@@ -3,6 +3,7 @@ import {computed, onMounted, reactive, ref, watch} from "vue";
 import generateSvg from "/src/assets/generate.svg";
 import {ElMessage} from "element-plus";
 import {Delete} from '@element-plus/icons-vue';
+// TODO 使用列表记录复制历史 并记录复制时间
 
 const RandomPasswordLocalStorageKey = 'RandomPasswordLocalStorageArgs';
 
