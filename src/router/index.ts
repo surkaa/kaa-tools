@@ -58,7 +58,6 @@ const routes: RouteRecordRaw[] = [
         meta: {
             title: '随机密码'
         }
-    }
     },
     {
         name: '图片组合',
