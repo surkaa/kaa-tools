@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /assets/
+Crawl-delay: 2
+
+Sitemap: https://tools.ywn.asia/sitemap.xml
