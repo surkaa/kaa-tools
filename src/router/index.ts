@@ -67,6 +67,14 @@ const routes: RouteRecordRaw[] = [
             title: '图片组合'
         }
     },
+    {
+        name: '图片框选',
+        path: '/img-box-selector',
+        component: () => import('../views/ImgBoxSelector.vue'),
+        meta: {
+            title: '图片框选'
+        }
+    },
 ]
 
 const router = createRouter({
