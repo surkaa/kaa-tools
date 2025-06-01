@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import {ref, useTemplateRef} from "vue";
+import {onMounted, ref, useTemplateRef} from "vue";
 
 const container = useTemplateRef('imageContainer');
-const imageList = ref<string[]>([
-    '1', '2', '3'
-]);
+const imageList = ref<string[]>([]);
 const sourceNode = ref<HTMLLIElement | null>(null);
 const ondragstart = (e: DragEvent) => {
   if (!e.target) return;
@@ -40,6 +38,11 @@ const ondragend = (_: DragEvent) => {
 const ondragover = (_: DragEvent) => {
   console.log('ondragover');
 }
+
+onMounted(() => {
+  // 生成50个
+  imageList.value = Array.from({ length: 50 }, (_, i) => `Image ${i + 1}`);
+});
 </script>
 
 <template>
