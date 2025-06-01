@@ -59,22 +59,6 @@ const routes: RouteRecordRaw[] = [
             title: '随机密码'
         }
     },
-    {
-        name: '图片组合',
-        path: '/img-collage',
-        component: () => import('../views/ImgCollage.vue'),
-        meta: {
-            title: '图片组合'
-        }
-    },
-    {
-        name: '图片框选',
-        path: '/img-box-selector',
-        component: () => import('../views/ImgBoxSelector.vue'),
-        meta: {
-            title: '图片框选'
-        }
-    },
 ]
 
 const router = createRouter({
