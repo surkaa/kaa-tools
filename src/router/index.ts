@@ -59,6 +59,14 @@ const routes: RouteRecordRaw[] = [
             title: '随机密码'
         }
     },
+    {
+        name: 'github-repostory-file-tree',
+        path: '/github-repostory-file-tree',
+        component: () => import('../views/GitHubRepoFileTree.vue'),
+        meta: {
+            title: 'GitHub 仓库文件树'
+        }
+    },
 ]
 
 const router = createRouter({
