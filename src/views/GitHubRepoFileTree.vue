@@ -2,8 +2,8 @@
 import {ref} from 'vue'
 import {ElMessage} from "element-plus";
 
-const owner = ref('SistrScarlet')
-const repo = ref('LittleMaidModelLoader')
+const owner = ref('')
+const repo = ref('')
 const branch = ref('master')
 const files = ref<string[]>([])
 const loading = ref(false)
