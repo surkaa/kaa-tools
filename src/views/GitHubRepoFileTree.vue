@@ -1,33 +1,51 @@
 <script setup lang="ts">
 import {ref} from 'vue'
+import {ElMessage} from "element-plus";
 
 const owner = ref('SistrScarlet')
 const repo = ref('LittleMaidModelLoader')
 const branch = ref('master')
 const files = ref<string[]>([])
 const loading = ref(false)
-const error = ref('')
 
-const fetchRepoTree = async () => {
+function fetchRepoTree() {
   if (!owner.value || !repo.value) {
-    error.value = '请输入 owner 和 repo'
+    ElMessage.error('请输入 owner 和 repo')
     return
   }
   loading.value = true
-  error.value = ''
   files.value = []
-  try {
-    const url = `https://api.github.com/repos/${owner.value}/${repo.value}/git/trees/${branch.value}?recursive=1`
-    const res = await fetch(url)
-    if (!res.ok) throw new Error(`请求失败: ${res.status}`)
-    const data = await res.json()
-    if (!data.tree) throw new Error('无效的返回数据')
-    files.value = data.tree.map((item: any) => item.path)
-  } catch (e: any) {
-    error.value = e.message
-  } finally {
-    loading.value = false
+  const url = `https://api.github.com/repos/${owner.value}/${repo.value}/git/trees/${branch.value}?recursive=1`
+
+  fetch(url)
+    .then(res => {
+      if (!res.ok) throw new Error(`请求失败: ${res.status}`)
+      return res.json()
+    })
+    .then(data => {
+      if (!data.tree) throw new Error('无效的返回数据')
+      files.value = data.tree.map((item: any) => item.path)
+    })
+    .catch(e => {
+      ElMessage.error(`错误: ${e.message}`)
+      console.error(e)
+    })
+    .finally(() => {
+      loading.value = false
+    })
+}
+
+function copyOutput() {
+  if (files.value.length === 0) {
+    ElMessage.warning('没有可复制的内容')
+    return
   }
+  const output = files.value.join('\n')
+  navigator.clipboard.writeText(output).then(() => {
+    ElMessage.success('已复制到剪贴板')
+  }).catch(() => {
+    ElMessage.error('复制失败，请手动复制')
+  })
 }
 </script>
 
@@ -47,11 +65,13 @@ const fetchRepoTree = async () => {
         <el-form-item>
           <el-button type="primary" @click="fetchRepoTree">获取目录</el-button>
         </el-form-item>
+        <el-form-item v-if="files.length > 0">
+          <el-button type="info" @click="copyOutput">复制输出结果</el-button>
+        </el-form-item>
       </el-form>
     </div>
 
     <div v-if="loading">加载中...</div>
-    <div v-if="error" style="color: red;">{{ error }}</div>
 
     <ul class="file-list" v-if="files.length > 0">
       <li v-for="file in files" :key="file">{{ file }}</li>
