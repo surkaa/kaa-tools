@@ -24,13 +24,12 @@ type SceneRow = {
   images: ImgItem[];             // 长度应等于 methodCount
   selection?: Selection;         // 统一选区
   inset: Inset;                  // 统一放大图状态
+  baseW: number;                 // 该行图的基准宽度（上传时确定）
+  baseH: number;                 // 该行图的基准高度（上传时确定）
 }
 
 const methodCount = ref<number>(5) // 默认 5 种方法
 const scenes = reactive<SceneRow[]>([])
-
-const baseWidth = ref<number | null>(null)
-const baseHeight = ref<number | null>(null)
 
 const isDrawing = ref(false)
 const drawStart = reactive({x: 0, y: 0})
@@ -42,15 +41,21 @@ const sceneGap = ref(20)  // px
 // 拖拽 inset
 const draggingInset = reactive({active: false, offsetX: 0, offsetY: 0, sceneIdx: -1})
 
-const imageAreaThreshold = computed(() => {
-  if (baseWidth.value == null || baseHeight.value == null) return Infinity
-  return baseWidth.value * baseHeight.value * 0.2
-})
+function imageAreaThreshold(sceneIdx: number) {
+  const row = scenes[sceneIdx];
+  if (!row || !row.selection) {
+    alert('请先选中一个选区。')
+    return Infinity
+  }
+  return row.baseW * row.baseH * 0.2;
+}
 
 function addScene() {
   const row: SceneRow = {
     images: Array.from({length: methodCount.value}, () => (null as any)),
-    inset: {x: 0, y: 0, zoom: 2, visible: false}
+    inset: {x: 0, y: 0, zoom: 2, visible: false},
+    baseW: 0,
+    baseH: 0,
   }
   // 用 null 占位，后续上传后替换
   row.images = Array.from({length: methodCount.value}, () => ({
@@ -61,20 +66,18 @@ function addScene() {
 
 function removeScene(i: number) {
   scenes.splice(i, 1)
-  if (scenes.length === 0) {
-    baseWidth.value = null
-    baseHeight.value = null
-  }
 }
 
 // 检查尺寸是否和基准一致
-function ensureBaseSizeMatch(w: number, h: number): boolean {
-  if (baseWidth.value == null || baseHeight.value == null) {
-    baseWidth.value = w
-    baseHeight.value = h
+function ensureBaseSizeMatch(w: number, h: number, sceneIdx: number): boolean {
+  const row = scenes[sceneIdx]
+  if (row.baseW === 0 && row.baseH === 0) {
+    // 第一次设置基准尺寸
+    row.baseW = w
+    row.baseH = h
     return true
   }
-  return w === baseWidth.value && h === baseHeight.value
+  return w === row.baseW && h === row.baseH
 }
 
 async function handleUpload(e: Event, sceneIdx: number) {
@@ -89,13 +92,14 @@ async function handleUpload(e: Event, sceneIdx: number) {
   }
 
   // 读取尺寸
-  const loaded: ImgItem[] = []
+  const loaded: ImgItem[] = [];
+  const row = scenes[sceneIdx];
   for (const f of files) {
     const url = URL.createObjectURL(f)
     const dims = await getImageSize(url)
-    if (!ensureBaseSizeMatch(dims.width, dims.height)) {
+    if (!ensureBaseSizeMatch(dims.width, dims.height, sceneIdx)) {
       URL.revokeObjectURL(url)
-      alert(`尺寸不一致：该批图片为 ${dims.width}×${dims.height}，但基准尺寸是 ${baseWidth.value}×${baseHeight.value}。已拦截。`)
+      alert(`尺寸不一致：该批图片为 ${dims.width}×${dims.height}，但基准尺寸是 ${row.baseW}×${row.baseH}。已拦截。`)
       input.value = ''
       // 释放之前已创建的URL
       loaded.forEach(it => URL.revokeObjectURL(it.url))
@@ -114,11 +118,10 @@ async function handleUpload(e: Event, sceneIdx: number) {
   // 设置到该行
   scenes[sceneIdx].images.splice(0, scenes[sceneIdx].images.length, ...loaded)
   // 默认把 inset 放在中心
-  const bw = baseWidth.value!, bh = baseHeight.value!
-  const defaultInsetW = Math.floor(Math.min(bw, bh) * 0.45)
+  const defaultInsetW = Math.floor(Math.min(row.baseW, row.baseH) * 0.45)
   const defaultInsetH = defaultInsetW
-  scenes[sceneIdx].inset.x = Math.floor((bw - defaultInsetW) / 2)
-  scenes[sceneIdx].inset.y = Math.floor((bh - defaultInsetH) / 2)
+  scenes[sceneIdx].inset.x = Math.floor((row.baseW - defaultInsetW) / 2)
+  scenes[sceneIdx].inset.y = Math.floor((row.baseH - defaultInsetH) / 2)
   scenes[sceneIdx].inset.zoom = 2
   await nextTick()
   input.value = ''
@@ -140,7 +143,7 @@ function onMouseDownSelect(ev: MouseEvent, sceneIdx: number, imgEl: HTMLImageEle
   isDrawing.value = true
   currentHoverSceneIdx.value = sceneIdx
 
-  const {x, y} = getRelativePos(ev, imgEl)
+  const {x, y} = getRelativePos(ev, imgEl, sceneIdx)
   drawStart.x = x
   drawStart.y = y
   // 初始化一个 selection
@@ -148,9 +151,10 @@ function onMouseDownSelect(ev: MouseEvent, sceneIdx: number, imgEl: HTMLImageEle
 }
 
 function onMouseMove(ev: MouseEvent, sceneIdx: number, imgEl: HTMLImageElement | null) {
+  const row = scenes[sceneIdx];
   if (draggingInset.active && draggingInset.sceneIdx === sceneIdx) {
     // 正在拖拽 inset
-    const bw = baseWidth.value!, bh = baseHeight.value!
+    const bw = row.baseW, bh = row.baseH
     const insetSize = getInsetRenderSize(sceneIdx)
     const newX = ev.clientX - draggingInset.offsetX
     const newY = ev.clientY - draggingInset.offsetY
@@ -172,11 +176,11 @@ function onMouseMove(ev: MouseEvent, sceneIdx: number, imgEl: HTMLImageElement |
   if (!isDrawing.value || currentHoverSceneIdx.value !== sceneIdx) return
   const s = scenes[sceneIdx]
   if (!s.selection) return
-  const {x, y} = getRelativePos(ev, imgEl!)
-  const rx = clamp(Math.min(drawStart.x, x), 0, baseWidth.value!)
-  const ry = clamp(Math.min(drawStart.y, y), 0, baseHeight.value!)
-  const rw = clamp(Math.abs(x - drawStart.x), 0, baseWidth.value! - rx)
-  const rh = clamp(Math.abs(y - drawStart.y), 0, baseHeight.value! - ry)
+  const {x, y} = getRelativePos(ev, imgEl!, sceneIdx)
+  const rx = clamp(Math.min(drawStart.x, x), 0, row.baseW)
+  const ry = clamp(Math.min(drawStart.y, y), 0, row.baseH)
+  const rw = clamp(Math.abs(x - drawStart.x), 0, row.baseW - rx)
+  const rh = clamp(Math.abs(y - drawStart.y), 0, row.baseH - ry)
   s.selection = {x: rx, y: ry, w: rw, h: rh}
 }
 
@@ -188,16 +192,17 @@ function onMouseUpSelect(_ev: MouseEvent, sceneIdx: number) {
   if (!s || !s.selection) return
   // 判断是否显示 inset（小于 20% 就显示）
   const area = s.selection.w * s.selection.h
-  s.inset.visible = area > 0 && area < imageAreaThreshold.value
+  s.inset.visible = area > 0 && area < imageAreaThreshold(sceneIdx)
 }
 
-function getRelativePos(ev: MouseEvent, imgEl: HTMLImageElement) {
+function getRelativePos(ev: MouseEvent, imgEl: HTMLImageElement, sceneIdx: number) {
+  const row = scenes[sceneIdx];
   const rect = imgEl.getBoundingClientRect()
   // 将屏幕坐标映射到原图像素（假设展示按等比铺满容器且原始尺寸=基准尺寸）
-  const scaleX = baseWidth.value! / rect.width
-  const scaleY = baseHeight.value! / rect.height
-  const x = clamp(Math.round((ev.clientX - rect.left) * scaleX), 0, baseWidth.value!)
-  const y = clamp(Math.round((ev.clientY - rect.top) * scaleY), 0, baseHeight.value!)
+  const scaleX = row.baseW / rect.width
+  const scaleY = row.baseH / rect.height
+  const x = clamp(Math.round((ev.clientX - rect.left) * scaleX), 0, row.baseW)
+  const y = clamp(Math.round((ev.clientY - rect.top) * scaleY), 0, row.baseH)
   return {x, y}
 }
 
@@ -212,20 +217,21 @@ function getInsetRenderSize(sceneIdx: number) {
   if (!sel) return {w: 0, h: 0}
   const w = Math.floor(sel.w * s.inset.zoom)
   const h = Math.floor(sel.h * s.inset.zoom)
-  const maxW = Math.floor(baseWidth.value! * 0.65)
-  const maxH = Math.floor(baseHeight.value! * 0.65)
+  const maxW = Math.floor(s.baseW * 0.65)
+  const maxH = Math.floor(s.baseH * 0.65)
   return {w: Math.min(w, maxW), h: Math.min(h, maxH)}
 }
 
 function onWheelInset(ev: WheelEvent, sceneIdx: number) {
   if (!scenes[sceneIdx].inset.visible) return
   ev.preventDefault()
-  const s = scenes[sceneIdx].inset
-  s.zoom = clamp(s.zoom + (ev.deltaY < 0 ? 0.2 : -0.2), 1, 8)
+  const s = scenes[sceneIdx];
+  const inset = s.inset;
+  inset.zoom = clamp(inset.zoom + (ev.deltaY < 0 ? 0.2 : -0.2), 1, 8)
   // 缩放后保证仍在边界内
   const sz = getInsetRenderSize(sceneIdx)
-  s.x = clamp(s.x, 0, baseWidth.value! - sz.w)
-  s.y = clamp(s.y, 0, baseHeight.value! - sz.h)
+  inset.x = clamp(inset.x, 0, s.baseW - sz.w)
+  inset.y = clamp(inset.y, 0, s.baseH - sz.h)
 }
 
 function onMouseDownInset(ev: MouseEvent, sceneIdx: number, imgEl: HTMLImageElement | null) {
@@ -246,7 +252,6 @@ window.addEventListener('mouseup', onMouseUpAnywhere)
 
 // 导出拼接图
 async function exportComposite() {
-  // 校验：每行必须有 methodCount 张图且均已就绪
   if (scenes.length === 0) {
     alert('没有场景可导出。')
     return
@@ -258,56 +263,97 @@ async function exportComposite() {
       return
     }
   }
-  const W = methodCount.value * (baseWidth.value || 0) + (methodCount.value - 1) * methodGap.value
-  const H = scenes.length * (baseHeight.value || 0) + (scenes.length - 1) * sceneGap.value
+
+  // 1. 找出所有场景的最大基准宽度
+  const maxBaseW = Math.max(...scenes.map(r => r.baseW))
+
+  // 2. 每行计算缩放后的高度
+  const rowHeights: number[] = []
+  for (const row of scenes) {
+    const scale = maxBaseW / row.baseW
+    rowHeights.push(Math.round(row.baseH * scale))
+  }
+
+  // 3. 计算画布总宽高
+  const W = methodCount.value * maxBaseW + (methodCount.value - 1) * methodGap.value
+  const H = rowHeights.reduce((sum, h, i) => sum + h + (i > 0 ? sceneGap.value : 0), 0)
+
   const canvas = document.createElement('canvas')
   canvas.width = W
   canvas.height = H
   const ctx = canvas.getContext('2d')!
 
   // 逐格绘制
+  let yOffset = 0
   for (let r = 0; r < scenes.length; r++) {
     const row = scenes[r]
+    const scale = maxBaseW / row.baseW
+    const scaledH = rowHeights[r]
+
     for (let c = 0; c < methodCount.value; c++) {
       const img = await ensureImageElement(row.images[c].url)
-      const x = c * baseWidth.value! + c * methodGap.value
-      const y = r * baseHeight.value! + r * sceneGap.value
-      ctx.drawImage(img, x, y)
+
+      const x = c * maxBaseW + c * methodGap.value
+      const y = yOffset
+
+      // 绘制缩放后的主图
+      ctx.drawImage(
+          img,
+          0, 0, row.baseW, row.baseH, // 原图基准大小
+          x, y, maxBaseW, scaledH     // 缩放绘制
+      )
 
       // 画红框
       if (row.selection && row.selection.w > 0 && row.selection.h > 0) {
         ctx.save()
         ctx.strokeStyle = 'red'
         ctx.lineWidth = 3
-        ctx.strokeRect(x + row.selection.x, y + row.selection.y, row.selection.w, row.selection.h)
+        ctx.strokeRect(
+            x + row.selection.x * scale,
+            y + row.selection.y * scale,
+            row.selection.w * scale,
+            row.selection.h * scale
+        )
         ctx.restore()
 
-        // 放大图（若可见）
+        // 放大图
         if (row.inset.visible) {
-          const insetSize = getInsetSizeForExport(row) // 与预览逻辑一致
-          // 截取选区，按 zoom 绘制到 inset 区域
+          const insetSize = getInsetSizeForExport(row)
+
+          // 注意这里：inset 的位置也要跟随 scale
+          const insetX = x + row.inset.x * scale
+          const insetY = y + row.inset.y * scale
+          const insetW = insetSize.w
+          const insetH = insetSize.h
+
           ctx.save()
+          ctx.fillStyle = 'white'
+          ctx.fillRect(insetX, insetY, insetW, insetH)
           ctx.strokeStyle = 'red'
           ctx.lineWidth = 2
-          // 背景白底以增加可见性
-          ctx.fillStyle = 'white'
-          ctx.fillRect(x + row.inset.x, y + row.inset.y, insetSize.w, insetSize.h)
-          // 计算将选区绘制到 inset 的缩放
-          const scale = Math.min(insetSize.w / row.selection.w, insetSize.h / row.selection.h)
-          const drawW = Math.floor(row.selection.w * scale)
-          const drawH = Math.floor(row.selection.h * scale)
-          const padX = Math.floor((insetSize.w - drawW) / 2)
-          const padY = Math.floor((insetSize.h - drawH) / 2)
+          ctx.strokeRect(insetX, insetY, insetW, insetH)
+
+          // 计算缩放后选区再放大
+          const scaleInset = Math.min(
+              insetW / (row.selection.w * scale),
+              insetH / (row.selection.h * scale)
+          )
+          const drawW = Math.floor(row.selection.w * scale * scaleInset)
+          const drawH = Math.floor(row.selection.h * scale * scaleInset)
+          const padX = Math.floor((insetW - drawW) / 2)
+          const padY = Math.floor((insetH - drawH) / 2)
+
           ctx.drawImage(
               img,
               row.selection.x, row.selection.y, row.selection.w, row.selection.h,
-              x + row.inset.x + padX, y + row.inset.y + padY, drawW, drawH
+              insetX + padX, insetY + padY, drawW, drawH
           )
-          ctx.strokeRect(x + row.inset.x, y + row.inset.y, insetSize.w, insetSize.h)
           ctx.restore()
         }
       }
     }
+
+    yOffset += scaledH + sceneGap.value
   }
 
   // 下载
@@ -321,8 +367,8 @@ function getInsetSizeForExport(row: SceneRow) {
   if (!row.selection) return {w: 0, h: 0}
   const w = Math.floor(row.selection.w * row.inset.zoom)
   const h = Math.floor(row.selection.h * row.inset.zoom)
-  const maxW = Math.floor((baseWidth.value || 0) * 0.65)
-  const maxH = Math.floor((baseHeight.value || 0) * 0.65)
+  const maxW = Math.floor((row.baseW || 0) * 0.65)
+  const maxH = Math.floor((row.baseH || 0) * 0.65)
   return {w: Math.min(w, maxW), h: Math.min(h, maxH)}
 }
 
@@ -409,11 +455,11 @@ const gridColsStyle = computed(() => ({
         />
       </label>
       <button class="btn" @click="addScene">新增场景行</button>
-      <button class="btn primary" @click="exportComposite" :disabled="!baseWidth || !baseHeight || scenes.length===0">
+      <button class="btn primary" @click="exportComposite" :disabled="scenes.length===0">
         导出对比图
       </button>
-      <div class="meta" v-if="baseWidth && baseHeight">
-        基准尺寸：{{ baseWidth }} × {{ baseHeight }} | 网格：{{ methodCount }} 列 × {{ scenes.length }} 行
+      <div class="meta" v-if="scenes.length">
+        网格：{{ methodCount }} 列 × {{ scenes.length }} 行
       </div>
     </div>
 
@@ -457,10 +503,10 @@ const gridColsStyle = computed(() => ({
                 v-if="row.selection && row.selection.w>0 && row.selection.h>0"
                 class="selection"
                 :style="{
-                left: (row.selection.x / (baseWidth||1)) * 100 + '%',
-                top: (row.selection.y / (baseHeight||1)) * 100 + '%',
-                width: (row.selection.w / (baseWidth||1)) * 100 + '%',
-                height: (row.selection.h / (baseHeight||1)) * 100 + '%'
+                left: (row.selection.x / (row.baseW || 1)) * 100 + '%',
+                top: (row.selection.y / (row.baseH || 1)) * 100 + '%',
+                width: (row.selection.w / (row.baseW || 1)) * 100 + '%',
+                height: (row.selection.h / (row.baseH || 1)) * 100 + '%'
               }"
             ></div>
 
@@ -469,10 +515,10 @@ const gridColsStyle = computed(() => ({
                 v-if="row.inset.visible && row.selection && row.selection.w>0"
                 class="inset"
                 :style="{
-                left: (row.inset.x / (baseWidth||1)) * 100 + '%',
-                top: (row.inset.y / (baseHeight||1)) * 100 + '%',
-                width: (getInsetRenderSize(rIdx).w / (baseWidth||1)) * 100 + '%',
-                height: (getInsetRenderSize(rIdx).h / (baseHeight||1)) * 100 + '%'
+                left: (row.inset.x / (row.baseW || 1)) * 100 + '%',
+                top: (row.inset.y / (row.baseH || 1)) * 100 + '%',
+                width: (getInsetRenderSize(rIdx).w / (row.baseW || 1)) * 100 + '%',
+                height: (getInsetRenderSize(rIdx).h / (row.baseH || 1)) * 100 + '%'
               }"
                 @wheel.prevent="(e) => onWheelInset(e, rIdx)"
                 @mousedown.stop="(e) => onMouseDownInset(e, rIdx, img.el || null)"
