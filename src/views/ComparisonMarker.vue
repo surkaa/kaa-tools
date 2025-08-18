@@ -37,7 +37,7 @@ const drawStart = reactive({x: 0, y: 0})
 const currentHoverSceneIdx = ref<number | null>(null) // 当前鼠标作用的场景行索引
 
 const methodGap = ref(20) // px
-const sceneGap = ref(40)  // px
+const sceneGap = ref(20)  // px
 
 // 拖拽 inset
 const draggingInset = reactive({active: false, offsetX: 0, offsetY: 0, sceneIdx: -1})
@@ -54,7 +54,7 @@ function addScene() {
   }
   // 用 null 占位，后续上传后替换
   row.images = Array.from({length: methodCount.value}, () => ({
-    file: undefined as any, url: '', width: 0, height: 0, el: null
+    file: undefined as any, url: '', width: 0, height: 0, el: null, name: ''
   }))
   scenes.push(row)
 }
@@ -394,6 +394,18 @@ const gridColsStyle = computed(() => ({
             min="1"
             max="20"
             v-model.number="methodCount"
+        />
+        渲染时不同方法间隔：
+        <input
+            type="number"
+            min="0"
+            v-model.number="methodGap"
+        />
+        渲染时不同场景间隔：
+        <input
+            type="number"
+            min="0"
+            v-model.number="sceneGap"
         />
       </label>
       <button class="btn" @click="addScene">新增场景行</button>
