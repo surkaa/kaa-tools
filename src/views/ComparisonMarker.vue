@@ -473,8 +473,8 @@ const gridColsStyle = computed(() => ({
         <div class="cell header">
           <div class="upload">
             <div class="title">场景 {{ rIdx + 1 }}</div>
-            <input type="file" accept="image/*" :multiple="true" @change="(e) => handleUpload(e, rIdx)"/>
-            <div class="hint">一次选择 {{ methodCount }} 张图片（同尺寸）。</div>
+            <input v-if="!row.baseW && !row.baseH" type="file" accept="image/*" :multiple="true" @change="(e) => handleUpload(e, rIdx)"/>
+            <div v-if="!row.baseW && !row.baseH" class="hint">一次选择 {{ methodCount }} 张图片（同尺寸）。</div>
             <button class="btn danger" @click="removeScene(rIdx)">删除该行</button>
           </div>
         </div>
