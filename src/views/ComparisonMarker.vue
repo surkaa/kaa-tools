@@ -502,6 +502,9 @@ const gridColsStyle = computed(() => ({
       <div class="meta" v-if="scenes.length">
         网格：{{ methodCount }} 列 × {{ scenes.length }} 行
       </div>
+      <div id="method-names" v-for="i in methodCount">
+        <input type="text" v-model="methodNames[i - 1]">
+      </div>
     </div>
 
     <div class="scenes">
