@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {ref, reactive, computed, nextTick} from 'vue'
+import {useLocalStorageRef} from "../utils/useLocalStorgeRef.ts";
 
 type Selection = {
   x: number; y: number; w: number; h: number; // 像素，基于原图尺寸
@@ -28,15 +29,15 @@ type SceneRow = {
   baseH: number;                 // 该行图的基准高度（上传时确定）
 }
 
-const methodCount = ref<number>(5) // 默认 5 种方法
+const methodCount = useLocalStorageRef<number>('methodCount', 5) // 默认 5 种方法
 const scenes = reactive<SceneRow[]>([])
 
 const isDrawing = ref(false)
 const drawStart = reactive({x: 0, y: 0})
 const currentHoverSceneIdx = ref<number | null>(null) // 当前鼠标作用的场景行索引
 
-const methodGap = ref(20) // px
-const sceneGap = ref(20)  // px
+const methodGap = useLocalStorageRef('methodGap', 20) // px
+const sceneGap = useLocalStorageRef('sceneGap', 20)  // px
 
 // 拖拽 inset
 const draggingInset = reactive({active: false, offsetX: 0, offsetY: 0, sceneIdx: -1})
