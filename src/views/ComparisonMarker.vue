@@ -27,9 +27,16 @@ type SceneRow = {
   inset: Inset;                  // 统一放大图状态
   baseW: number;                 // 该行图的基准宽度（上传时确定）
   baseH: number;                 // 该行图的基准高度（上传时确定）
+  name: string;
 }
 
+const sceneLabelW = 100 // 左边预留 100px 放场景名字
+const methodLabelH = 40 // 上边预留 40px 放方法名字
+
 const methodCount = useLocalStorageRef<number>('methodCount', 5) // 默认 5 种方法
+const methodNames = useLocalStorageRef<string[]>('methodNames', [
+    '3DGS', 'FSGS', 'DROP', 'OURS', 'GT'
+]);
 const scenes = reactive<SceneRow[]>([])
 
 const isDrawing = ref(false)
@@ -57,6 +64,7 @@ function addScene() {
     inset: {x: 0, y: 0, zoom: 2, visible: false},
     baseW: 0,
     baseH: 0,
+    name: `场景 ${scenes.length + 1}`
   }
   // 用 null 占位，后续上传后替换
   row.images = Array.from({length: methodCount.value}, () => ({
@@ -276,16 +284,56 @@ async function exportComposite() {
   }
 
   // 3. 计算画布总宽高
-  const W = methodCount.value * maxBaseW + (methodCount.value - 1) * methodGap.value
-  const H = rowHeights.reduce((sum, h, i) => sum + h + (i > 0 ? sceneGap.value : 0), 0)
+  const W = methodCount.value * maxBaseW + (methodCount.value - 1) * methodGap.value + sceneLabelW
+  const H = rowHeights.reduce((sum, h, i) => sum + h + (i > 0 ? sceneGap.value : 0), 0) + methodLabelH
 
   const canvas = document.createElement('canvas')
   canvas.width = W
   canvas.height = H
   const ctx = canvas.getContext('2d')!
 
-  // 逐格绘制
+  // 绘制字符串
+  ctx.save()
+  ctx.font = "20px Times New Roman"
+  ctx.textAlign = "center"
+  ctx.textBaseline = "middle"
+
+  for (let c = 0; c < methodCount.value; c++) {
+    const x = sceneLabelW + c * maxBaseW + c * methodGap.value + maxBaseW / 2
+    const y = methodLabelH / 2
+    const mn = methodNames.value[c];
+    console.log(mn);
+    ctx.fillText(mn, x, y)
+  }
+  ctx.restore()
+  ctx.save()
+
+  ctx.font = "20px Times New Roman"
+  ctx.textAlign = "center"
+  ctx.textBaseline = "middle"
   let yOffset = 0
+  for (let r = 0; r < scenes.length; r++) {
+    const row = scenes[r]
+    const scaledH = rowHeights[r]
+
+    // 文字中心点
+    const cx = sceneLabelW / 2
+    const cy = methodLabelH + yOffset + scaledH / 2
+
+    // 把画布移动到中心点，旋转 -90°，写字
+    ctx.translate(cx, cy)
+    ctx.rotate(-Math.PI / 2)
+    ctx.fillText(row.name, 0, 0)
+
+    ctx.rotate(Math.PI / 2)
+    ctx.translate(-cx, -cy)
+
+    yOffset += scaledH + sceneGap.value
+  }
+  ctx.restore()
+
+  // 逐格绘制
+  yOffset = 0
   for (let r = 0; r < scenes.length; r++) {
     const row = scenes[r]
     const scale = maxBaseW / row.baseW
@@ -294,8 +342,8 @@ async function exportComposite() {
     for (let c = 0; c < methodCount.value; c++) {
       const img = await ensureImageElement(row.images[c].url)
 
-      const x = c * maxBaseW + c * methodGap.value
-      const y = yOffset
+      const x = sceneLabelW + c * maxBaseW + c * methodGap.value
+      const y = methodLabelH + yOffset
 
       // 绘制缩放后的主图
       ctx.drawImage(
@@ -465,7 +513,15 @@ const gridColsStyle = computed(() => ({
       >
         <div class="cell header">
           <div class="upload">
-            <div class="title">场景 {{ rIdx + 1 }}</div>
+            <div class="title">
+              <!-- 可输入可修改的场景 -->
+              <input
+                  type="text"
+                  v-model="row.name"
+                  placeholder="场景名称"
+                  @input="row.name = row.name.trim() || `场景 ${rIdx + 1}`"
+              />
+            </div>
             <input v-if="!row.baseW && !row.baseH" type="file" accept="image/*" :multiple="true" @change="(e) => handleUpload(e, rIdx)"/>
             <div v-if="!row.baseW && !row.baseH" class="hint">一次选择 {{ methodCount }} 张图片（同尺寸）。</div>
             <button class="btn danger" @click="removeScene(rIdx)">删除该行</button>
@@ -629,6 +685,18 @@ const gridColsStyle = computed(() => ({
         .title {
           font-weight: 600;
           margin-right: 6px;
+
+          input {
+            // 放大
+            width: 150px;
+            padding: 4px 6px;
+            font-size: 40px;
+            border: 1px solid #999;
+            border-radius: 4px;
+            background: #222;
+            color: #fff;
+            outline: none;
+          }
         }
 
         .hint {
