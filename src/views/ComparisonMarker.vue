@@ -322,8 +322,8 @@ async function exportComposite() {
       const insetSize = getInsetSizeForExport(row)
       const insetX = x + row.inset.x * scale
       const insetY = y + row.inset.y * scale
-      const insetW = insetSize.w
-      const insetH = insetSize.h
+      const insetW = insetSize.w * scale
+      const insetH = insetSize.h * scale
       ctx.save()
       ctx.fillStyle = 'white'
       ctx.fillRect(insetX, insetY, insetW, insetH)
