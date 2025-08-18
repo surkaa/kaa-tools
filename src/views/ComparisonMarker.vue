@@ -543,7 +543,7 @@ const gridColsStyle = computed(() => ({
         <li>点击“新增场景行”，每行代表一个场景；一次性选择 <b>{{ methodCount }}</b> 张图（对应不同方法）。</li>
         <li>在任意方法图上用鼠标拖出红框（所有方法图同步该位置）。</li>
         <li>若选区 &lt; 原图 20% 面积，会自动显示放大图：滚轮调倍率，按住左键拖动位置（限原图内）。</li>
-        <li>点击“导出对比图”，输出 PNG：宽 = 方法数×图宽，高 = 场景数×图高。</li>
+        <li>点击“导出对比图”，输出 PNG：宽 = 方法数×最宽图的宽+若干间隙，高 = 每个场景图片的高度和+若干间隙。</li>
       </ol>
     </div>
   </div>
@@ -613,22 +613,19 @@ const gridColsStyle = computed(() => ({
 
 .scene-row {
   display: grid;
-  grid-auto-rows: 1fr;
   gap: 10px;
   align-items: start;
+  border: 1px solid #8886;
 
   .cell {
     position: relative;
     background: #1113;
-    border: 1px dashed #8886;
     overflow: hidden;
-    min-height: 120px;
 
     &.header {
       grid-column: 1 / -1;
       padding: 10px;
       background: #1112;
-      border-style: solid;
 
       .upload {
         display: flex;
@@ -650,6 +647,14 @@ const gridColsStyle = computed(() => ({
 
   .image-cell {
     background: #000;
+
+    .filename {
+      margin-top: 4px;
+      font-size: 12px;
+      color: #aaa;
+      text-align: center;
+      word-break: break-all;
+    }
 
     .placeholder {
       display: grid;
@@ -702,14 +707,6 @@ const gridColsStyle = computed(() => ({
         cursor: grabbing;
       }
     }
-  }
-
-  .filename {
-    margin-top: 4px;
-    font-size: 12px;
-    color: #aaa;
-    text-align: center;
-    word-break: break-all;
   }
 }
 
