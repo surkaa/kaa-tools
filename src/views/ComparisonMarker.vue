@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref, reactive, computed, nextTick} from 'vue'
+import {computed, nextTick, reactive, ref} from 'vue'
 import {useLocalStorageRef} from "../utils/useLocalStorgeRef.ts";
 
 type Selection = {
@@ -469,6 +469,26 @@ function drawInsetPreview(sceneIdx: number, colIdx: number, canvasEl: HTMLCanvas
 const gridColsStyle = computed(() => ({
   gridTemplateColumns: `repeat(${methodCount.value}, 1fr)`
 }))
+
+function onMethodCountInput(event: Event) {
+  const val = Number((event.target as HTMLInputElement).value)
+
+  // 如果已经有场景了，询问是否要更改
+  if (scenes.length > 0 && val !== methodCount.value) {
+    if (!confirm(`当前有 ${scenes.length} 个场景，是否要更改方法数？这将重置所有场景。`)) return
+    // 重置所有场景
+    scenes.splice(0, scenes.length);
+  }
+  // 确保 methodNames 数组长度与 methodCount 一致
+  while (methodNames.value.length < methodCount.value) {
+    methodNames.value.push(`method ${methodNames.value.length + 1}`)
+  }
+  while (methodNames.value.length > methodCount.value) {
+    methodNames.value.pop()
+  }
+
+  methodCount.value = val
+}
 </script>
 
 <template>
@@ -480,7 +500,8 @@ const gridColsStyle = computed(() => ({
             type="number"
             min="1"
             max="20"
-            v-model.number="methodCount"
+            :value="methodCount"
+            @input="onMethodCountInput"
         />
         渲染时不同方法间隔：
         <input
