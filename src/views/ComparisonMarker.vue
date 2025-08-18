@@ -34,7 +34,7 @@ const sceneLabelW = 100 // 左边预留 100px 放场景名字
 const methodLabelH = 40 // 上边预留 40px 放方法名字
 
 const methodCount = useLocalStorageRef<number>('methodCount', 5) // 默认 5 种方法
-const methodNames = ref<string[]>(Array.from({length: methodCount.value}, (_, i) => `method ${i + 1}`));
+const methodNames = useLocalStorageRef<string[]>('methodNames', Array.from({length: methodCount.value}, (_, i) => `Method ${i + 1}`));
 const scenes = reactive<SceneRow[]>([])
 
 const isDrawing = ref(false)
