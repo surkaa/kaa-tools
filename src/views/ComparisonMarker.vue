@@ -304,54 +304,46 @@ async function exportComposite() {
           x, y, maxBaseW, scaledH     // 缩放绘制
       )
 
+      if (!(row.selection && row.selection.w > 0 && row.selection.h > 0)) continue;
       // 画红框
-      if (row.selection && row.selection.w > 0 && row.selection.h > 0) {
-        ctx.save()
-        ctx.strokeStyle = 'red'
-        ctx.lineWidth = 3
-        ctx.strokeRect(
-            x + row.selection.x * scale,
-            y + row.selection.y * scale,
-            row.selection.w * scale,
-            row.selection.h * scale
-        )
-        ctx.restore()
+      ctx.save()
+      ctx.strokeStyle = 'red'
+      ctx.lineWidth = 3
+      ctx.strokeRect(
+          x + row.selection.x * scale,
+          y + row.selection.y * scale,
+          row.selection.w * scale,
+          row.selection.h * scale
+      )
+      ctx.restore()
+      if (!row.inset.visible) continue;
 
-        // 放大图
-        if (row.inset.visible) {
-          const insetSize = getInsetSizeForExport(row)
-
-          // 注意这里：inset 的位置也要跟随 scale
-          const insetX = x + row.inset.x * scale
-          const insetY = y + row.inset.y * scale
-          const insetW = insetSize.w
-          const insetH = insetSize.h
-
-          ctx.save()
-          ctx.fillStyle = 'white'
-          ctx.fillRect(insetX, insetY, insetW, insetH)
-          ctx.strokeStyle = 'red'
-          ctx.lineWidth = 2
-          ctx.strokeRect(insetX, insetY, insetW, insetH)
-
-          // 计算缩放后选区再放大
-          const scaleInset = Math.min(
-              insetW / (row.selection.w * scale),
-              insetH / (row.selection.h * scale)
-          )
-          const drawW = Math.floor(row.selection.w * scale * scaleInset)
-          const drawH = Math.floor(row.selection.h * scale * scaleInset)
-          const padX = Math.floor((insetW - drawW) / 2)
-          const padY = Math.floor((insetH - drawH) / 2)
-
-          ctx.drawImage(
-              img,
-              row.selection.x, row.selection.y, row.selection.w, row.selection.h,
-              insetX + padX, insetY + padY, drawW, drawH
-          )
-          ctx.restore()
-        }
-      }
+      // 画放大后的图
+      const insetSize = getInsetSizeForExport(row)
+      const insetX = x + row.inset.x * scale
+      const insetY = y + row.inset.y * scale
+      const insetW = insetSize.w
+      const insetH = insetSize.h
+      ctx.save()
+      ctx.fillStyle = 'white'
+      ctx.fillRect(insetX, insetY, insetW, insetH)
+      ctx.strokeStyle = 'red'
+      ctx.lineWidth = 2
+      ctx.strokeRect(insetX, insetY, insetW, insetH)
+      const scaleInset = Math.min(
+          insetW / (row.selection.w * scale),
+          insetH / (row.selection.h * scale)
+      )
+      const drawW = Math.floor(row.selection.w * scale * scaleInset)
+      const drawH = Math.floor(row.selection.h * scale * scaleInset)
+      const padX = Math.floor((insetW - drawW) / 2)
+      const padY = Math.floor((insetH - drawH) / 2)
+      ctx.drawImage(
+          img,
+          row.selection.x, row.selection.y, row.selection.w, row.selection.h,
+          insetX + padX, insetY + padY, drawW, drawH
+      )
+      ctx.restore()
     }
 
     yOffset += scaledH + sceneGap.value
