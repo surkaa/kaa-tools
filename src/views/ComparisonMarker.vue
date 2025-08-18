@@ -16,6 +16,7 @@ type ImgItem = {
   url: string;
   width: number;
   height: number;
+  name: string;
   el?: HTMLImageElement | null; // 预览 <img> 引用（用于绘制 inset）
 }
 
@@ -34,6 +35,9 @@ const baseHeight = ref<number | null>(null)
 const isDrawing = ref(false)
 const drawStart = reactive({x: 0, y: 0})
 const currentHoverSceneIdx = ref<number | null>(null) // 当前鼠标作用的场景行索引
+
+const methodGap = ref(20) // px
+const sceneGap = ref(40)  // px
 
 // 拖拽 inset
 const draggingInset = reactive({active: false, offsetX: 0, offsetY: 0, sceneIdx: -1})
@@ -97,7 +101,14 @@ async function handleUpload(e: Event, sceneIdx: number) {
       loaded.forEach(it => URL.revokeObjectURL(it.url))
       return
     }
-    loaded.push({file: f, url, width: dims.width, height: dims.height, el: null})
+    loaded.push({
+      file: f,
+      url,
+      width: dims.width,
+      height: dims.height,
+      name: f.name,
+      el: null
+    })
   }
 
   // 设置到该行
@@ -247,8 +258,8 @@ async function exportComposite() {
       return
     }
   }
-  const W = methodCount.value * (baseWidth.value || 0)
-  const H = scenes.length * (baseHeight.value || 0)
+  const W = methodCount.value * (baseWidth.value || 0) + (methodCount.value - 1) * methodGap.value
+  const H = scenes.length * (baseHeight.value || 0) + (scenes.length - 1) * sceneGap.value
   const canvas = document.createElement('canvas')
   canvas.width = W
   canvas.height = H
@@ -259,8 +270,8 @@ async function exportComposite() {
     const row = scenes[r]
     for (let c = 0; c < methodCount.value; c++) {
       const img = await ensureImageElement(row.images[c].url)
-      const x = c * baseWidth.value!
-      const y = r * baseHeight.value!
+      const x = c * baseWidth.value! + c * methodGap.value
+      const y = r * baseHeight.value! + r * sceneGap.value
       ctx.drawImage(img, x, y)
 
       // 画红框
@@ -415,6 +426,7 @@ const gridColsStyle = computed(() => ({
             :key="cIdx"
             class="cell image-cell"
         >
+          <div class="filename">{{ img.name }}</div>
           <div class="image-wrap" v-if="img && img.url">
             <!-- 原图 -->
             <img
@@ -486,6 +498,7 @@ const gridColsStyle = computed(() => ({
   flex-direction: column;
   gap: 12px;
   user-select: none;
+  overflow-y: auto;
 }
 
 .toolbar {
@@ -631,6 +644,14 @@ const gridColsStyle = computed(() => ({
         cursor: grabbing;
       }
     }
+  }
+
+  .filename {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #aaa;
+    text-align: center;
+    word-break: break-all;
   }
 }
 
