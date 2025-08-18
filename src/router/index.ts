@@ -67,6 +67,14 @@ const routes: RouteRecordRaw[] = [
             title: 'GitHub 仓库文件树'
         }
     },
+    {
+        name: 'comparison-marker',
+        path: '/comparison-marker',
+        component: () => import('../views/ComparisonMarker.vue'),
+        meta: {
+            title: '对比标记'
+        }
+    },
 ]
 
 const router = createRouter({
