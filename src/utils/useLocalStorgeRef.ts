@@ -1,6 +1,6 @@
 import {ref, watch} from "vue";
 
-const refix = 'ulr.';
+export const refix = 'ulr.' as const;
 
 export const useLocalStorageRef = <T>(key: string, initialValue: T) => {
     key = refix + key;

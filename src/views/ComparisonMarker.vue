@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {computed, nextTick, reactive, ref} from 'vue'
-import {useLocalStorageRef} from "../utils/useLocalStorgeRef.ts";
+import {refix, useLocalStorageRef} from "../utils/useLocalStorgeRef.ts";
 
 type Selection = {
   x: number; y: number; w: number; h: number; // 像素，基于原图尺寸
@@ -46,6 +46,10 @@ const sceneGap = useLocalStorageRef('sceneGap', 20)  // px
 
 // 拖拽 inset
 const draggingInset = reactive({active: false, offsetX: 0, offsetY: 0, sceneIdx: -1})
+
+function saveMethodNames() {
+  localStorage.setItem(refix + 'methodNames', JSON.stringify(methodNames.value));
+}
 
 function imageAreaThreshold(sceneIdx: number) {
   const row = scenes[sceneIdx];
@@ -397,9 +401,12 @@ async function exportComposite() {
 
   // 下载
   const a = document.createElement('a')
-  a.download = `comparison_${W}x${H}.png`
+  const allSceneNames = scenes.map(r => r.name).join(',')
+  const allMethodNames = methodNames.value.join(',')
+  a.download = `comparison_${allMethodNames}_X_${allSceneNames}.png`
   a.href = canvas.toDataURL('image/png')
   a.click()
+  saveMethodNames()
 }
 
 function getInsetSizeForExport(row: SceneRow) {
@@ -476,6 +483,9 @@ function onMethodCountInput(event: Event) {
     if (!confirm(`当前有 ${scenes.length} 个场景，是否要更改方法数？这将重置所有场景。`)) return
     // 重置所有场景
     scenes.splice(0, scenes.length);
+  }
+  if (methodNames.value.length == methodCount.value) {
+    saveMethodNames()
   }
   // 确保 methodNames 数组长度与 methodCount 一致
   while (methodNames.value.length < methodCount.value) {
