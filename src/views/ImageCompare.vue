@@ -154,7 +154,6 @@ window.addEventListener("mouseup", onMouseUp)
         align-items: center;
         margin: 0 4px;
         user-select: none;
-        cursor: grab;
         flex-direction: column;
         border: 1px solid #ccc;
         border-radius: 4px;
@@ -163,6 +162,11 @@ window.addEventListener("mouseup", onMouseUp)
           max-width: 100%;
           max-height: 100%;
           transition: none;
+          cursor: grab;
+
+          &:active {
+            cursor: grabbing;
+          }
         }
 
         .file-name {
