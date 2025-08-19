@@ -75,6 +75,14 @@ const routes: RouteRecordRaw[] = [
             title: '对比标记'
         }
     },
+    {
+        name: 'image-compare',
+        path: '/image-compare',
+        component: () => import('../views/ImageCompare.vue'),
+        meta: {
+            title: '图片对比'
+        }
+    }
 ]
 
 const router = createRouter({
