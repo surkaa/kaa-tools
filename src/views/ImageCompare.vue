@@ -5,6 +5,7 @@ type ImgItem = {
   url: string
   width: number
   height: number
+  name: string
 }
 
 const images = ref<ImgItem[]>([])
@@ -34,7 +35,9 @@ async function handleUpload(e: Event) {
       alert(`尺寸不一致，要求所有图片必须是 ${baseWidth.value}×${baseHeight.value}`)
       return
     }
-    loaded.push({url, width: dims.width, height: dims.height})
+    loaded.push({
+      url, width: dims.width, height: dims.height, name: f.name
+    })
   }
   images.value = loaded
   input.value = ""
@@ -99,7 +102,11 @@ window.addEventListener("mouseup", onMouseUp)
               :src="img.url"
               :style="{transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`}"
               draggable="false"
-              alt=""/>
+              alt=""
+          />
+          <p class="file-name">
+            {{ img.name }}
+          </p>
         </div>
       </div>
     </div>
@@ -131,7 +138,6 @@ window.addEventListener("mouseup", onMouseUp)
 
   .viewer {
     position: relative;
-    background: #000;
     overflow: hidden;
     flex: 1;
     min-height: 400px;
@@ -144,13 +150,27 @@ window.addEventListener("mouseup", onMouseUp)
       .img-wrap {
         overflow: hidden;
         display: flex;
-        justify-content: center;
+        justify-content: space-between;
         align-items: center;
+        margin: 0 4px;
+        user-select: none;
+        cursor: grab;
+        flex-direction: column;
+        border: 1px solid #ccc;
+        border-radius: 4px;
 
         img {
           max-width: 100%;
           max-height: 100%;
           transition: none;
+        }
+
+        .file-name {
+          color: #fff;
+          font-size: 12px;
+          text-align: center;
+          word-break: break-all;
+          z-index: 2;
         }
       }
     }
