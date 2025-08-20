@@ -79,6 +79,21 @@ function removeScene(i: number) {
   scenes.splice(i, 1)
 }
 
+function moveLeftImage(sceneIdx: number, imgIdx: number) {
+  if (imgIdx <= 0) return
+  const row = scenes[sceneIdx]
+  if (!row || !row.images[imgIdx] || !row.images[imgIdx - 1]) return
+  // 交换位置
+  [row.images[imgIdx], row.images[imgIdx - 1]] = [row.images[imgIdx - 1], row.images[imgIdx]]
+}
+
+function moveRightImage(sceneIdx: number, imgIdx: number) {
+  const row = scenes[sceneIdx]
+  if (!row || !row.images[imgIdx] || !row.images[imgIdx + 1]) return
+  // 交换位置
+  [row.images[imgIdx], row.images[imgIdx + 1]] = [row.images[imgIdx + 1], row.images[imgIdx]]
+}
+
 // 检查尺寸是否和基准一致
 function ensureBaseSizeMatch(w: number, h: number, sceneIdx: number): boolean {
   const row = scenes[sceneIdx]
@@ -565,7 +580,11 @@ function onMethodCountInput(event: Event) {
             :key="cIdx"
             class="cell image-cell"
         >
-          <div class="filename">{{ img.name }}</div>
+          <div class="image-toolbox">
+            <button class="btn" @click="moveLeftImage(rIdx, cIdx)" :disabled="cIdx <= 0">←</button>
+            <div class="filename">{{ img.name }}</div>
+            <button class="btn" @click="moveRightImage(rIdx, cIdx)" :disabled="cIdx >= methodCount - 1">→</button>
+          </div>
           <div class="image-wrap" v-if="img && img.url">
             <!-- 原图 -->
             <img
@@ -740,13 +759,23 @@ function onMethodCountInput(event: Event) {
 
   .image-cell {
     background: #000;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 
-    .filename {
-      margin-top: 4px;
-      font-size: 12px;
-      color: #aaa;
-      text-align: center;
-      word-break: break-all;
+    .image-toolbox {
+      display: flex;
+      justify-content: space-evenly;
+      align-items: center;
+
+      .filename {
+        width: fit-content;
+        margin-top: 4px;
+        font-size: 12px;
+        color: #aaa;
+        text-align: center;
+        word-break: break-all;
+      }
     }
 
     .placeholder {
