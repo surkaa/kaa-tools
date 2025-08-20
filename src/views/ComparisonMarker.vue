@@ -30,8 +30,8 @@ type SceneRow = {
   name: string;
 }
 
-const sceneLabelW = 100 // 左边预留 100px 放场景名字
-const methodLabelH = 40 // 上边预留 40px 放方法名字
+// const sceneLabelW = 60 // 左边预留 100px 放场景名字
+// const methodLabelH = 40 // 上边预留 40px 放方法名字
 
 const methodCount = useLocalStorageRef<number>('methodCount', 5) // 默认 5 种方法
 const methodNames = useLocalStorageRef<string[]>('methodNames', Array.from({length: methodCount.value}, (_, i) => `Method ${i + 1}`));
@@ -43,6 +43,9 @@ const currentHoverSceneIdx = ref<number | null>(null) // 当前鼠标作用的�
 
 const methodGap = useLocalStorageRef('methodGap', 20) // px
 const sceneGap = useLocalStorageRef('sceneGap', 20)  // px
+const fontSize = useLocalStorageRef('fontSize', 40) // px
+const sceneLabelW = useLocalStorageRef('sceneLabelW', 60) // px
+const methodLabelH = useLocalStorageRef('methodLabelH', 40) // px
 
 // 拖拽 inset
 const draggingInset = reactive({active: false, offsetX: 0, offsetY: 0, sceneIdx: -1})
@@ -301,8 +304,8 @@ async function exportComposite() {
   }
 
   // 3. 计算画布总宽高
-  const W = methodCount.value * maxBaseW + (methodCount.value - 1) * methodGap.value + sceneLabelW
-  const H = rowHeights.reduce((sum, h, i) => sum + h + (i > 0 ? sceneGap.value : 0), 0) + methodLabelH
+  const W = methodCount.value * maxBaseW + (methodCount.value - 1) * methodGap.value + sceneLabelW.value
+  const H = rowHeights.reduce((sum, h, i) => sum + h + (i > 0 ? sceneGap.value : 0), 0) + methodLabelH.value
 
   const canvas = document.createElement('canvas')
   canvas.width = W
@@ -311,13 +314,13 @@ async function exportComposite() {
 
   // 绘制字符串
   ctx.save()
-  ctx.font = "20px Times New Roman"
+  ctx.font = `${fontSize.value}px Times New Roman`
   ctx.textAlign = "center"
   ctx.textBaseline = "middle"
 
   for (let c = 0; c < methodCount.value; c++) {
-    const x = sceneLabelW + c * maxBaseW + c * methodGap.value + maxBaseW / 2
-    const y = methodLabelH / 2
+    const x = sceneLabelW.value + c * maxBaseW + c * methodGap.value + maxBaseW / 2
+    const y = methodLabelH.value / 2
     const mn = methodNames.value[c];
     console.log(mn);
     ctx.fillText(mn, x, y)
@@ -325,7 +328,7 @@ async function exportComposite() {
   ctx.restore()
   ctx.save()
 
-  ctx.font = "20px Times New Roman"
+  ctx.font = `${fontSize.value}px Times New Roman`
   ctx.textAlign = "center"
   ctx.textBaseline = "middle"
   let yOffset = 0
@@ -334,8 +337,8 @@ async function exportComposite() {
     const scaledH = rowHeights[r]
 
     // 文字中心点
-    const cx = sceneLabelW / 2
-    const cy = methodLabelH + yOffset + scaledH / 2
+    const cx = sceneLabelW.value / 2
+    const cy = methodLabelH.value + yOffset + scaledH / 2
 
     // 把画布移动到中心点，旋转 -90°，写字
     ctx.translate(cx, cy)
@@ -359,8 +362,8 @@ async function exportComposite() {
     for (let c = 0; c < methodCount.value; c++) {
       const img = await ensureImageElement(row.images[c].url)
 
-      const x = sceneLabelW + c * maxBaseW + c * methodGap.value
-      const y = methodLabelH + yOffset
+      const x = sceneLabelW.value + c * maxBaseW + c * methodGap.value
+      const y = methodLabelH.value + yOffset
 
       // 绘制缩放后的主图
       ctx.drawImage(
@@ -517,6 +520,10 @@ function onMethodCountInput(event: Event) {
 <template>
   <div id="comparison-marker">
     <div class="toolbar">
+      <button class="btn" @click="addScene">新增场景行</button>
+      <button class="btn primary" @click="exportComposite" :disabled="scenes.length===0">
+        导出对比图
+      </button>
       <label class="inline">
         方法数：
         <input
@@ -538,16 +545,31 @@ function onMethodCountInput(event: Event) {
             min="0"
             v-model.number="sceneGap"
         />
+        字体大小：
+        <input
+            type="number"
+            min="10"
+            v-model.number="fontSize"
+        />
+        场景名称宽度：
+        <input
+            type="number"
+            min="20"
+            v-model.number="sceneLabelW"
+        />
+        方法名称高度：
+        <input
+            type="number"
+            min="20"
+            v-model.number="methodLabelH"
+        />
       </label>
-      <button class="btn" @click="addScene">新增场景行</button>
-      <button class="btn primary" @click="exportComposite" :disabled="scenes.length===0">
-        导出对比图
-      </button>
       <div class="meta" v-if="scenes.length">
         网格：{{ methodCount }} 列 × {{ scenes.length }} 行
       </div>
+      方法名称：
       <div id="method-names" v-for="i in methodCount">
-        <input type="text" v-model="methodNames[i - 1]">
+        <input type="text" v-model="methodNames[i - 1]" style="width: 100px">
       </div>
     </div>
 
