@@ -9,8 +9,6 @@ type ImgItem = {
 }
 
 const images = ref<ImgItem[]>([])
-const baseWidth = ref<number | null>(null)
-const baseHeight = ref<number | null>(null)
 
 const mode = ref<"grid">("grid") // 对比模式：grid=并排，slider=滑动
 
@@ -30,11 +28,6 @@ async function handleUpload(e: Event) {
   for (const f of files) {
     const url = URL.createObjectURL(f)
     const dims = await getImageSize(url)
-    if (!ensureBaseSizeMatch(dims.width, dims.height)) {
-      URL.revokeObjectURL(url)
-      alert(`尺寸不一致，要求所有图片必须是 ${baseWidth.value}×${baseHeight.value}`)
-      return
-    }
     loaded.push({
       url, width: dims.width, height: dims.height, name: f.name
     })
@@ -50,15 +43,6 @@ function getImageSize(url: string): Promise<{ width: number; height: number }> {
     img.onerror = reject
     img.src = url
   })
-}
-
-function ensureBaseSizeMatch(w: number, h: number): boolean {
-  if (baseWidth.value == null || baseHeight.value == null) {
-    baseWidth.value = w
-    baseHeight.value = h
-    return true
-  }
-  return w === baseWidth.value && h === baseHeight.value
 }
 
 // 缩放与拖动
