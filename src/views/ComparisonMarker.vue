@@ -24,8 +24,8 @@ type ImgItem = {
 
 type SceneRow = {
   images: ImgItem[];             // 长度应等于 methodCount
-  selection?: Selection;         // 统一选区
-  inset: Inset;                  // 统一放大图状态
+  selections: Selection[];       // 统一选区
+  insets: Inset[];               // 统一放大图状态
   baseW: number;                 // 该行图的基准宽度（上传时确定）
   baseH: number;                 // 该行图的基准高度（上传时确定）
   name: string;
@@ -54,7 +54,7 @@ const sceneLabelW = useLocalStorageRef('sceneLabelW', 60) // px
 const methodLabelH = useLocalStorageRef('methodLabelH', 40) // px
 
 // 拖拽 inset
-const draggingInset = reactive({active: false, offsetX: 0, offsetY: 0, sceneIdx: -1})
+const draggingInset = reactive({active: false, offsetX: 0, offsetY: 0, sceneIdx: -1, insetIdx: -1, mouseDownImage: -1})
 
 function saveMethodNames() {
   localStorage.setItem(refix + 'methodNames', JSON.stringify(methodNames.value));
@@ -62,7 +62,7 @@ function saveMethodNames() {
 
 function imageAreaThreshold(sceneIdx: number) {
   const row = scenes[sceneIdx];
-  if (!row || !row.selection) {
+  if (!row || !row.selections) {
     ElMessage.error('请先选中一个选区。')
     return Infinity
   }
@@ -72,7 +72,8 @@ function imageAreaThreshold(sceneIdx: number) {
 function addScene() {
   const row: SceneRow = {
     images: Array.from({length: methodCount.value}, () => (null as any)),
-    inset: {x: 0, y: 0, zoom: 2, visible: false},
+    insets: [],
+    selections: [],
     baseW: 0,
     baseH: 0,
     name: `场景 ${scenes.length + 1}`
@@ -152,12 +153,6 @@ async function handleUpload(e: Event, sceneIdx: number) {
 
   // 设置到该行
   scenes[sceneIdx].images.splice(0, scenes[sceneIdx].images.length, ...loaded)
-  // 默认把 inset 放在中心
-  const defaultInsetW = Math.floor(Math.min(row.baseW, row.baseH) * 0.45)
-  const defaultInsetH = defaultInsetW
-  scenes[sceneIdx].inset.x = Math.floor((row.baseW - defaultInsetW) / 2)
-  scenes[sceneIdx].inset.y = Math.floor((row.baseH - defaultInsetH) / 2)
-  scenes[sceneIdx].inset.zoom = 2
   await nextTick()
   input.value = ''
 }
@@ -177,57 +172,50 @@ function onMouseDownSelect(ev: MouseEvent, sceneIdx: number, imgEl: HTMLImageEle
   if (!scenes[sceneIdx] || scenes[sceneIdx].images.some(it => !it.url)) return
   isDrawing.value = true
   currentHoverSceneIdx.value = sceneIdx
+  const row = scenes[sceneIdx];
 
   const {x, y} = getRelativePos(ev, imgEl, sceneIdx)
-  drawStart.x = x
-  drawStart.y = y
-  // 初始化一个 selection
-  scenes[sceneIdx].selection = {x, y, w: 0, h: 0}
+  if (!ev.shiftKey) {
+    // 左键单选 -> 清空之前所有框
+    row.selections = [];
+    row.insets = [];
+  }
+  // 新建当前框
+  row.selections.push({ x, y, w: 0, h: 0 });
+  row.insets.push({ x: 0, y: 0, zoom: 2, visible: false });
+
+  drawStart.x = x;
+  drawStart.y = y;
 }
 
 function onMouseMove(ev: MouseEvent, sceneIdx: number, imgEl: HTMLImageElement | null) {
+  if (!isDrawing.value || currentHoverSceneIdx.value !== sceneIdx || !imgEl) return;
   const row = scenes[sceneIdx];
-  if (draggingInset.active && draggingInset.sceneIdx === sceneIdx) {
-    // 正在拖拽 inset
-    const bw = row.baseW, bh = row.baseH
-    const insetSize = getInsetRenderSize(sceneIdx)
-    const newX = ev.clientX - draggingInset.offsetX
-    const newY = ev.clientY - draggingInset.offsetY
+  const sel = row.selections[row.selections.length - 1]; // 当前框
+  if (!sel) return;
 
-    // 将屏幕坐标转成图片内像素坐标
-    const imgRect = (imgEl as HTMLImageElement).getBoundingClientRect()
-    let ix = Math.round(newX - imgRect.left)
-    let iy = Math.round(newY - imgRect.top)
-
-    // 边界限制（inset 不能超出原图范围）
-    ix = clamp(ix, 0, bw - insetSize.w)
-    iy = clamp(iy, 0, bh - insetSize.h)
-
-    scenes[sceneIdx].inset.x = ix
-    scenes[sceneIdx].inset.y = iy
-    return
-  }
-
-  if (!isDrawing.value || currentHoverSceneIdx.value !== sceneIdx) return
-  const s = scenes[sceneIdx]
-  if (!s.selection) return
-  const {x, y} = getRelativePos(ev, imgEl!, sceneIdx)
-  const rx = clamp(Math.min(drawStart.x, x), 0, row.baseW)
-  const ry = clamp(Math.min(drawStart.y, y), 0, row.baseH)
-  const rw = clamp(Math.abs(x - drawStart.x), 0, row.baseW - rx)
-  const rh = clamp(Math.abs(y - drawStart.y), 0, row.baseH - ry)
-  s.selection = {x: rx, y: ry, w: rw, h: rh}
+  const { x, y } = getRelativePos(ev, imgEl, sceneIdx);
+  sel.x = clamp(Math.min(drawStart.x, x), 0, row.baseW);
+  sel.y = clamp(Math.min(drawStart.y, y), 0, row.baseH);
+  sel.w = clamp(Math.abs(x - drawStart.x), 0, row.baseW - sel.x);
+  sel.h = clamp(Math.abs(y - drawStart.y), 0, row.baseH - sel.y);
 }
 
 function onMouseUpSelect(_ev: MouseEvent, sceneIdx: number) {
-  if (!isDrawing.value) return
-  isDrawing.value = false
-  currentHoverSceneIdx.value = null
-  const s = scenes[sceneIdx]
-  if (!s || !s.selection) return
-  // 判断是否显示 inset（小于 20% 就显示）
-  const area = s.selection.w * s.selection.h
-  s.inset.visible = area > 0 && area < imageAreaThreshold(sceneIdx)
+  if (!isDrawing.value) return;
+  isDrawing.value = false;
+  currentHoverSceneIdx.value = null;
+  const row = scenes[sceneIdx];
+  const sel = row.selections[row.selections.length - 1];
+  const inset = row.insets[row.insets.length - 1];
+  if (!sel || !inset) return;
+
+  const area = sel.w * sel.h;
+  inset.visible = area > 0 && area < imageAreaThreshold(sceneIdx);
+
+  // 默认放大图位置在选区中心
+  inset.x = Math.floor(sel.x + sel.w / 2 - (sel.w * inset.zoom) / 2);
+  inset.y = Math.floor(sel.y + sel.h / 2 - (sel.h * inset.zoom) / 2);
 }
 
 function getRelativePos(ev: MouseEvent, imgEl: HTMLImageElement, sceneIdx: number) {
@@ -246,43 +234,78 @@ function clamp(v: number, min: number, max: number) {
 }
 
 // 放大图尺寸（渲染到预览层时，取选区大小*zoom，但同时限制最大宽高为原图 65%）
-function getInsetRenderSize(sceneIdx: number) {
+function getInsetRenderSize(sceneIdx: number, sId: number) {
   const s = scenes[sceneIdx]
-  const sel = s.selection
+  const sel = s.selections[sId]
+  const inset = s.insets[sId]
   if (!sel) return {w: 0, h: 0}
-  const w = Math.floor(sel.w * s.inset.zoom)
-  const h = Math.floor(sel.h * s.inset.zoom)
+  const w = Math.floor(sel.w * inset.zoom)
+  const h = Math.floor(sel.h * inset.zoom)
   const maxW = Math.floor(s.baseW * 0.65)
   const maxH = Math.floor(s.baseH * 0.65)
   return {w: Math.min(w, maxW), h: Math.min(h, maxH)}
 }
 
-function onWheelInset(ev: WheelEvent, sceneIdx: number) {
-  if (!scenes[sceneIdx].inset.visible) return
+function onWheelInset(ev: WheelEvent, sceneIdx: number, sId: number) {
+  console.log('sceneIdx', sceneIdx, 'sId', sId, 'ev.deltaY', ev.deltaY);
+  const row = scenes[sceneIdx];
+  const inset = row.insets[sId];
+  if (!inset.visible) return
   ev.preventDefault()
   const s = scenes[sceneIdx];
-  const inset = s.inset;
   inset.zoom = clamp(inset.zoom + (ev.deltaY < 0 ? 0.2 : -0.2), 1, 8)
   // 缩放后保证仍在边界内
-  const sz = getInsetRenderSize(sceneIdx)
+  const sz = getInsetRenderSize(sceneIdx, sId);
   inset.x = clamp(inset.x, 0, s.baseW - sz.w)
   inset.y = clamp(inset.y, 0, s.baseH - sz.h)
 }
 
-function onMouseDownInset(ev: MouseEvent, sceneIdx: number, imgEl: HTMLImageElement | null) {
+function onMouseDownInset(ev: MouseEvent, sceneIdx: number, imgEl: HTMLImageElement | null, sId: number) {
+  console.log('onMouseDownInset', sceneIdx, sId, ev.clientX, ev.clientY);
   if (!imgEl) return
+  const row = scenes[sceneIdx];
+  const inset = row.insets[sId];
   draggingInset.active = true
   draggingInset.sceneIdx = sceneIdx
   const imgRect = imgEl.getBoundingClientRect()
-  draggingInset.offsetX = ev.clientX - (imgRect.left + scenes[sceneIdx].inset.x)
-  draggingInset.offsetY = ev.clientY - (imgRect.top + scenes[sceneIdx].inset.y)
+  draggingInset.offsetX = ev.clientX - (imgRect.left + inset.x)
+  draggingInset.offsetY = ev.clientY - (imgRect.top + inset.y)
+  draggingInset.insetIdx = sId
+  draggingInset.mouseDownImage = row.images.findIndex(img => img.el === imgEl)
 }
 
 function onMouseUpAnywhere() {
   draggingInset.active = false
   draggingInset.sceneIdx = -1
+  draggingInset.insetIdx = -1
+  draggingInset.offsetX = 0
+  draggingInset.offsetY = 0
+  draggingInset.mouseDownImage = -1
 }
 
+function onMouseMoveAnywhere(ev: MouseEvent) {
+  if (!draggingInset.active) return
+  const sceneIdx = draggingInset.sceneIdx
+  if (sceneIdx < 0) return
+
+  const row = scenes[sceneIdx]
+  // 找出当前拖动的 inset
+  const inset = row.insets.find((_, idx) => idx === draggingInset.insetIdx)
+  if (!inset) return
+
+  const imgEl = row.images[draggingInset.mouseDownImage]?.el
+  if (!imgEl) return
+
+  const imgRect = imgEl.getBoundingClientRect()
+  const sz = getInsetRenderSize(sceneIdx, draggingInset.insetIdx)
+
+  inset.x = clamp(ev.clientX - imgRect.left - draggingInset.offsetX, 0, row.baseW - sz.w)
+  inset.y = clamp(ev.clientY - imgRect.top - draggingInset.offsetY, 0, row.baseH - sz.h)
+
+  console.log('Dragging inset', sceneIdx, draggingInset.insetIdx, 'to', inset.x, inset.y, 'mouse position', ev.clientX, ev.clientY);
+}
+
+window.addEventListener('mousemove', onMouseMoveAnywhere)
 window.addEventListener('mouseup', onMouseUpAnywhere)
 
 // 导出拼接图
@@ -378,46 +401,50 @@ async function exportComposite() {
           x, y, maxBaseW, scaledH     // 缩放绘制
       )
 
-      if (!(row.selection && row.selection.w > 0 && row.selection.h > 0)) continue;
-      // 画红框
-      ctx.save()
-      ctx.strokeStyle = 'red'
-      ctx.lineWidth = 3
-      ctx.strokeRect(
-          x + row.selection.x * scale,
-          y + row.selection.y * scale,
-          row.selection.w * scale,
-          row.selection.h * scale
-      )
-      ctx.restore()
-      if (!row.inset.visible) continue;
+      for (let s = 0; s < row.selections.length; s += 1) {
+        const sel = row.selections[s];
+        const inset = row.insets[s];
+        if (!(sel && sel.w > 0 && sel.h > 0)) continue;
+        // 画红框
+        ctx.save()
+        ctx.strokeStyle = 'red'
+        ctx.lineWidth = 3
+        ctx.strokeRect(
+            x + sel.x * scale,
+            y + sel.y * scale,
+            sel.w * scale,
+            sel.h * scale
+        )
+        ctx.restore()
+        if (!inset.visible) continue;
 
-      // 画放大后的图
-      const insetSize = getInsetSizeForExport(row)
-      const insetX = x + row.inset.x * scale
-      const insetY = y + row.inset.y * scale
-      const insetW = insetSize.w * scale
-      const insetH = insetSize.h * scale
-      ctx.save()
-      ctx.fillStyle = 'white'
-      ctx.fillRect(insetX, insetY, insetW, insetH)
-      ctx.strokeStyle = 'red'
-      ctx.lineWidth = 2
-      ctx.strokeRect(insetX, insetY, insetW, insetH)
-      const scaleInset = Math.min(
-          insetW / (row.selection.w * scale),
-          insetH / (row.selection.h * scale)
-      )
-      const drawW = Math.floor(row.selection.w * scale * scaleInset)
-      const drawH = Math.floor(row.selection.h * scale * scaleInset)
-      const padX = Math.floor((insetW - drawW) / 2)
-      const padY = Math.floor((insetH - drawH) / 2)
-      ctx.drawImage(
-          img,
-          row.selection.x, row.selection.y, row.selection.w, row.selection.h,
-          insetX + padX, insetY + padY, drawW, drawH
-      )
-      ctx.restore()
+        // 画放大后的图
+        const insetSize = getInsetSizeForExport(row, s)
+        const insetX = x + inset.x * scale
+        const insetY = y + inset.y * scale
+        const insetW = insetSize.w * scale
+        const insetH = insetSize.h * scale
+        ctx.save()
+        ctx.fillStyle = 'white'
+        ctx.fillRect(insetX, insetY, insetW, insetH)
+        ctx.strokeStyle = 'red'
+        ctx.lineWidth = 2
+        ctx.strokeRect(insetX, insetY, insetW, insetH)
+        const scaleInset = Math.min(
+            insetW / (sel.w * scale),
+            insetH / (sel.h * scale)
+        )
+        const drawW = Math.floor(sel.w * scale * scaleInset)
+        const drawH = Math.floor(sel.h * scale * scaleInset)
+        const padX = Math.floor((insetW - drawW) / 2)
+        const padY = Math.floor((insetH - drawH) / 2)
+        ctx.drawImage(
+            img,
+            sel.x, sel.y, sel.w, sel.h,
+            insetX + padX, insetY + padY, drawW, drawH
+        )
+        ctx.restore()
+      }
     }
 
     yOffset += scaledH + sceneGap.value
@@ -433,10 +460,13 @@ async function exportComposite() {
   saveMethodNames()
 }
 
-function getInsetSizeForExport(row: SceneRow) {
-  if (!row.selection) return {w: 0, h: 0}
-  const w = Math.floor(row.selection.w * row.inset.zoom)
-  const h = Math.floor(row.selection.h * row.inset.zoom)
+function getInsetSizeForExport(row: SceneRow, s: number) {
+  const sel = row.selections[s]
+  const inset = row.insets[s]
+  if (!sel) return {w: 0, h: 0}
+
+  const w = Math.floor(sel.w * inset.zoom)
+  const h = Math.floor(sel.h * inset.zoom)
   const maxW = Math.floor((row.baseW || 0) * 0.65)
   const maxH = Math.floor((row.baseH || 0) * 0.65)
   return {w: Math.min(w, maxW), h: Math.min(h, maxH)}
@@ -459,13 +489,15 @@ function attachImgEl(sceneIdx: number, colIdx: number, el: HTMLImageElement | nu
 }
 
 // 把选区渲染到 inset 预览 <canvas>（每格一个）
-function drawInsetPreview(sceneIdx: number, colIdx: number, canvasEl: HTMLCanvasElement | null) {
-  const row = scenes[sceneIdx]
-  if (!canvasEl || !row || !row.inset.visible || !row.selection) return
+function drawInsetPreview(sceneIdx: number, colIdx: number, canvasEl: HTMLCanvasElement | null, sId: number) {
+  const row = scenes[sceneIdx];
+  const sel = row.selections[sId];
+  const inset = row.insets[sId];
+  if (!canvasEl || !row || !inset.visible || !row.selections) return
   const imgEl = row.images[colIdx].el
   if (!imgEl) return
 
-  const {w, h} = getInsetRenderSize(sceneIdx)
+  const {w, h} = getInsetRenderSize(sceneIdx, sId)
   canvasEl.width = w
   canvasEl.height = h
 
@@ -473,9 +505,9 @@ function drawInsetPreview(sceneIdx: number, colIdx: number, canvasEl: HTMLCanvas
   ctx.clearRect(0, 0, w, h)
 
   // 将原图上选区绘制到 inset
-  const scale = Math.min(w / row.selection.w, h / row.selection.h)
-  const drawW = Math.floor(row.selection.w * scale)
-  const drawH = Math.floor(row.selection.h * scale)
+  const scale = Math.min(w / sel.w, h / sel.h)
+  const drawW = Math.floor(sel.w * scale)
+  const drawH = Math.floor(sel.h * scale)
   const padX = Math.floor((w - drawW) / 2)
   const padY = Math.floor((h - drawH) / 2)
 
@@ -483,7 +515,7 @@ function drawInsetPreview(sceneIdx: number, colIdx: number, canvasEl: HTMLCanvas
   ensureImageElement(row.images[colIdx].url).then(srcImg => {
     ctx.drawImage(
         srcImg,
-        row.selection!.x, row.selection!.y, row.selection!.w, row.selection!.h,
+        sel.x, sel.y, sel.w, sel.h,
         padX, padY, drawW, drawH
     )
     // 红边
@@ -527,8 +559,8 @@ function persistScenes() {
     name: s.name,
     baseW: s.baseW,
     baseH: s.baseH,
-    selection: s.selection,
-    inset: s.inset,
+    selection: s.selections,
+    inset: s.insets,
     images: s.images.map(img => ({
       name: img.name,
       url: img.url   // objectURL，刷新后可能失效
@@ -577,8 +609,8 @@ async function exportConfig() {
       name: s.name,
       baseW: s.baseW,
       baseH: s.baseH,
-      selection: s.selection,
-      inset: s.inset,
+      selection: s.selections,
+      inset: s.insets,
       images: await Promise.all(s.images.map(async (img) => {
         if (!img.url) return {name: img.name}
         const base64 = await fetch(img.url).then(r => r.blob()).then(blob => new Promise<string>((resolve) => {
@@ -683,8 +715,8 @@ async function confirmScene() {
       ...img,
       el: null // 预览时需要重新 attach
     })),
-    selection: {x: 0, y: 0, w: 0, h: 0},
-    inset: {x: 0, y: 0, zoom: 2, visible: false},
+    selections: [],
+    insets: [],
     baseW: uploadCache.value[0].width,
     baseH: uploadCache.value[0].height,
     name: `场景 ${scenes.length + 1}`
@@ -825,35 +857,39 @@ async function confirmScene() {
                 alt=""/>
 
             <!-- 红框（按基准尺寸 -> 实际呈现按比例缩放） -->
-            <div
-                v-if="row.selection && row.selection.w>0 && row.selection.h>0"
-                class="selection"
-                :style="{
-                left: (row.selection.x / (row.baseW || 1)) * 100 + '%',
-                top: (row.selection.y / (row.baseH || 1)) * 100 + '%',
-                width: (row.selection.w / (row.baseW || 1)) * 100 + '%',
-                height: (row.selection.h / (row.baseH || 1)) * 100 + '%'
-              }"
-            ></div>
+            <template v-for="selection in row.selections">
+              <div
+                  v-if="selection && selection.w>0 && selection.h>0"
+                  class="selection"
+                  :style="{
+                    left: (selection.x / (row.baseW || 1)) * 100 + '%',
+                    top: (selection.y / (row.baseH || 1)) * 100 + '%',
+                    width: (selection.w / (row.baseW || 1)) * 100 + '%',
+                    height: (selection.h / (row.baseH || 1)) * 100 + '%'
+                  }"
+              ></div>
+            </template>
 
             <!-- 放大图（预览 canvas） -->
-            <div
-                v-if="row.inset.visible && row.selection && row.selection.w>0"
-                class="inset"
-                :style="{
-                left: (row.inset.x / (row.baseW || 1)) * 100 + '%',
-                top: (row.inset.y / (row.baseH || 1)) * 100 + '%',
-                width: (getInsetRenderSize(rIdx).w / (row.baseW || 1)) * 100 + '%',
-                height: (getInsetRenderSize(rIdx).h / (row.baseH || 1)) * 100 + '%'
-              }"
-                @wheel.prevent="(e) => onWheelInset(e, rIdx)"
-                @mousedown.stop="(e) => onMouseDownInset(e, rIdx, img.el || null)"
-            >
-              <canvas
-                  class="inset-canvas"
-                  :ref="(el:any) => drawInsetPreview(rIdx, cIdx, el)"
-              ></canvas>
-            </div>
+            <template v-for="(inset, sid) in row.insets">
+              <div
+                  v-if="inset.visible && row.selections && row.selections[sid].w>0"
+                  class="inset"
+                  :style="{
+                    left: (inset.x / (row.baseW || 1)) * 100 + '%',
+                    top: (inset.y / (row.baseH || 1)) * 100 + '%',
+                    width: (getInsetRenderSize(rIdx, sid).w / (row.baseW || 1)) * 100 + '%',
+                    height: (getInsetRenderSize(rIdx, sid).h / (row.baseH || 1)) * 100 + '%'
+                  }"
+                  @wheel.prevent="(e) => onWheelInset(e, rIdx, sid)"
+                  @mousedown.stop="(e) => onMouseDownInset(e, rIdx, img.el || null, sid)"
+              >
+                <canvas
+                    class="inset-canvas"
+                    :ref="(el:any) => drawInsetPreview(rIdx, cIdx, el, sid)"
+                ></canvas>
+              </div>
+            </template>
           </div>
           <div v-else class="placeholder">
             <div>方法 {{ cIdx + 1 }}</div>
