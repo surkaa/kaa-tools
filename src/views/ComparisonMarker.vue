@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {computed, nextTick, reactive, ref} from 'vue'
-import {refix, useLocalStorageRef} from "../utils/useLocalStorgeRef.ts";
+import {ElMessage, ElMessageBox} from "element-plus";
+import {useLocalStorageRef, refix} from "../utils/useLocalStorgeRef.ts";
 
 type Selection = {
   x: number; y: number; w: number; h: number; // 像素，基于原图尺寸
@@ -57,7 +58,7 @@ function saveMethodNames() {
 function imageAreaThreshold(sceneIdx: number) {
   const row = scenes[sceneIdx];
   if (!row || !row.selection) {
-    alert('请先选中一个选区。')
+    ElMessage.error('请先选中一个选区。')
     return Infinity
   }
   return row.baseW * row.baseH * 0.2;
@@ -115,7 +116,7 @@ async function handleUpload(e: Event, sceneIdx: number) {
   if (files.length === 0) return
 
   if (files.length !== methodCount.value) {
-    alert(`请一次选择 ${methodCount.value} 张图片（对应 ${methodCount.value} 种方法）。`)
+    ElMessage.error(`请一次选择 ${methodCount.value} 张图片（对应 ${methodCount.value} 种方法）。`)
     input.value = ''
     return
   }
@@ -128,7 +129,7 @@ async function handleUpload(e: Event, sceneIdx: number) {
     const dims = await getImageSize(url)
     if (!ensureBaseSizeMatch(dims.width, dims.height, sceneIdx)) {
       URL.revokeObjectURL(url)
-      alert(`尺寸不一致：该批图片为 ${dims.width}×${dims.height}，但基准尺寸是 ${row.baseW}×${row.baseH}。已拦截。`)
+      ElMessage.error(`尺寸不一致：该批图片为 ${dims.width}×${dims.height}，但基准尺寸是 ${row.baseW}×${row.baseH}。已拦截。`)
       input.value = ''
       // 释放之前已创建的URL
       loaded.forEach(it => URL.revokeObjectURL(it.url))
@@ -282,13 +283,13 @@ window.addEventListener('mouseup', onMouseUpAnywhere)
 // 导出拼接图
 async function exportComposite() {
   if (scenes.length === 0) {
-    alert('没有场景可导出。')
+    ElMessage.error('没有场景可导出。')
     return
   }
   for (let i = 0; i < scenes.length; i++) {
     const row = scenes[i]
     if (row.images.length !== methodCount.value || row.images.some(img => !img || !img.url)) {
-      alert(`第 ${i + 1} 行还未上传完 ${methodCount.value} 张图片。`)
+      ElMessage.error(`第 ${i + 1} 行还未上传完 ${methodCount.value} 张图片。`)
       return
     }
   }
@@ -502,9 +503,6 @@ function onMethodCountInput(event: Event) {
     // 重置所有场景
     scenes.splice(0, scenes.length);
   }
-  if (methodNames.value.length == methodCount.value) {
-    saveMethodNames()
-  }
   // 确保 methodNames 数组长度与 methodCount 一致
   while (methodNames.value.length < methodCount.value) {
     methodNames.value.push(`method ${methodNames.value.length + 1}`)
@@ -515,6 +513,113 @@ function onMethodCountInput(event: Event) {
 
   methodCount.value = val
 }
+
+// ===== 持久化场景数据 =====
+
+// 1. 保存配置到 localStorage（轻量保存，不包含图片的 base64）
+function persistScenes() {
+  localStorage.setItem('scenes', JSON.stringify(scenes.map(s => ({
+    name: s.name,
+    baseW: s.baseW,
+    baseH: s.baseH,
+    selection: s.selection,
+    inset: s.inset,
+    images: s.images.map(img => ({
+      name: img.name,
+      url: img.url   // objectURL，刷新后可能失效
+    }))
+  }))));
+  ElMessage.success('场景已保存到本地存储。');
+}
+
+// 2. 从 localStorage 恢复
+function restoreScenes() {
+  const raw = localStorage.getItem('scenes')
+  if (!raw) return
+  try {
+    const arr = JSON.parse(raw)
+    scenes.splice(0, scenes.length, ...arr.map((s: any) => ({
+      ...s,
+      images: s.images.map((img: any) => ({
+        ...img,
+        el: null, // 需要重新 attach
+        file: null
+      }))
+    })));
+    ElMessage.success('场景已从本地存储恢复。');
+  } catch (e) {
+    console.error('恢复场景失败:', e)
+  }
+}
+
+// 3. 导出配置文件（含 base64）
+async function exportConfig() {
+  try {
+    const { value: filename } = await ElMessageBox.prompt(
+        '请输入要保存的文件名（不需要后缀）',
+        '导出配置',
+        {
+          confirmButtonText: '导出',
+          cancelButtonText: '取消',
+          inputValue: '3d_reconstruction_config',
+          inputPattern: /^[\w\-_ ]+$/,  // 限制字符
+          inputErrorMessage: '文件名只能包含字母、数字、下划线、短横线和空格'
+        }
+    )
+
+    // ===== 生成 JSON 内容（和之前一样）=====
+    const json = await Promise.all(scenes.map(async (s) => ({
+      name: s.name,
+      baseW: s.baseW,
+      baseH: s.baseH,
+      selection: s.selection,
+      inset: s.inset,
+      images: await Promise.all(s.images.map(async (img) => {
+        if (!img.url) return { name: img.name }
+        const base64 = await fetch(img.url).then(r => r.blob()).then(blob => new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.readAsDataURL(blob)
+        }))
+        return { name: img.name, url: base64 }
+      }))
+    })))
+
+    const blob = new Blob([JSON.stringify({
+      methodCount: methodCount.value,
+      methodNames: methodNames.value,
+      scenes: json
+    }, null, 2)], { type: 'application/json' })
+
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `${filename}.json`   // ✅ 使用用户输入的名字
+    a.click()
+  } catch {
+    // 用户点了取消
+  }
+}
+
+// 4. 导入配置文件
+async function importConfig(e: Event) {
+  const input = e.target as HTMLInputElement
+  if (!input.files?.length) return
+  const file = input.files[0]
+  const text = await file.text()
+  const data = JSON.parse(text)
+
+  methodCount.value = data.methodCount
+  methodNames.value = data.methodNames
+
+  scenes.splice(0, scenes.length, ...data.scenes.map((s: any) => ({
+    ...s,
+    images: s.images.map((img: any) => ({
+      ...img,
+      file: null,
+      el: null
+    }))
+  })))
+}
 </script>
 
 <template>
@@ -524,6 +629,12 @@ function onMethodCountInput(event: Event) {
       <button class="btn primary" @click="exportComposite" :disabled="scenes.length===0">
         导出对比图
       </button>
+      <button class="btn" @click="persistScenes">保存到本地存储</button>
+      <button class="btn" @click="restoreScenes">从本地存储恢复</button>
+
+      <button class="btn" @click="exportConfig" :disabled="scenes.length===0">导出配置文件</button>
+      <input type="file" accept="application/json" @change="importConfig" style="display:none" id="import-json"/>
+      <label for="import-json" class="btn">导入配置文件</label>
       <label class="inline">
         方法数：
         <input
@@ -569,7 +680,7 @@ function onMethodCountInput(event: Event) {
       </div>
       方法名称：
       <div id="method-names" v-for="i in methodCount">
-        <input type="text" v-model="methodNames[i - 1]" style="width: 100px">
+        <input type="text" v-model="methodNames[i - 1]">
       </div>
     </div>
 
@@ -591,7 +702,8 @@ function onMethodCountInput(event: Event) {
                   @input="row.name = row.name.trim() || `场景 ${rIdx + 1}`"
               />
             </div>
-            <input v-if="!row.baseW && !row.baseH" type="file" accept="image/*" :multiple="true" @change="(e) => handleUpload(e, rIdx)"/>
+            <input v-if="!row.baseW && !row.baseH" type="file" accept="image/*" :multiple="true"
+                   @change="(e) => handleUpload(e, rIdx)"/>
             <div v-if="!row.baseW && !row.baseH" class="hint">一次选择 {{ methodCount }} 张图片（同尺寸）。</div>
             <button class="btn danger" @click="removeScene(rIdx)">删除该行</button>
           </div>
@@ -687,15 +799,14 @@ function onMethodCountInput(event: Event) {
   gap: 12px;
   flex-wrap: wrap;
 
+  input {
+    width: 100px;
+  }
+
   .inline {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-
-    input[type="number"] {
-      width: 80px;
-      padding: 4px 6px;
-    }
   }
 
   .btn {
