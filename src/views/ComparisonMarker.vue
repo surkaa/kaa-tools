@@ -36,6 +36,7 @@ type SceneRow = {
 
 const methodCount = useLocalStorageRef<number>('methodCount', 5) // 默认 5 种方法
 const methodNames = useLocalStorageRef<string[]>('methodNames', Array.from({length: methodCount.value}, (_, i) => `Method ${i + 1}`));
+const uploadCache = ref<ImgItem[]>([]) // 临时缓存
 const scenes = reactive<SceneRow[]>([])
 
 const isDrawing = ref(false)
@@ -555,7 +556,7 @@ function restoreScenes() {
 // 3. 导出配置文件（含 base64）
 async function exportConfig() {
   try {
-    const { value: filename } = await ElMessageBox.prompt(
+    const {value: filename} = await ElMessageBox.prompt(
         '请输入要保存的文件名（不需要后缀）',
         '导出配置',
         {
@@ -575,13 +576,13 @@ async function exportConfig() {
       selection: s.selection,
       inset: s.inset,
       images: await Promise.all(s.images.map(async (img) => {
-        if (!img.url) return { name: img.name }
+        if (!img.url) return {name: img.name}
         const base64 = await fetch(img.url).then(r => r.blob()).then(blob => new Promise<string>((resolve) => {
           const reader = new FileReader()
           reader.onload = () => resolve(reader.result as string)
           reader.readAsDataURL(blob)
         }))
-        return { name: img.name, url: base64 }
+        return {name: img.name, url: base64}
       }))
     })))
 
@@ -589,7 +590,7 @@ async function exportConfig() {
       methodCount: methodCount.value,
       methodNames: methodNames.value,
       scenes: json
-    }, null, 2)], { type: 'application/json' })
+    }, null, 2)], {type: 'application/json'})
 
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
@@ -620,6 +621,62 @@ async function importConfig(e: Event) {
     }))
   })))
 }
+
+// 单张上传
+async function handleSingleUpload(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+
+  if (uploadCache.value.length >= methodCount.value) {
+    ElMessage.warning('缓存已满，请先添加到场景或清空缓存')
+    return
+  }
+
+  const url = URL.createObjectURL(file)
+  const dims = await getImageSize(url)
+
+  uploadCache.value.push({
+    file,
+    url,
+    width: dims.width,
+    height: dims.height,
+    name: file.name,
+    el: null // 预览时需要重新 attach
+  })
+
+  if (uploadCache.value.length === methodCount.value) {
+    ElMessage.success('缓存已满，可以添加到场景了')
+  }
+}
+
+// 清空缓存
+function clearCache() {
+  uploadCache.value = []
+}
+
+// 缓存转场景
+async function confirmScene() {
+  if (uploadCache.value.length !== methodCount.value) {
+    ElMessage.error(`请上传 ${methodCount.value} 张图片再添加场景`)
+    return
+  }
+
+  const row: SceneRow = {
+    images: uploadCache.value.map(img => ({
+      ...img,
+      el: null // 预览时需要重新 attach
+    })),
+    selection: {x: 0, y: 0, w: 0, h: 0},
+    inset: {x: 0, y: 0, zoom: 2, visible: false},
+    baseW: uploadCache.value[0].width,
+    baseH: uploadCache.value[0].height,
+    name: `场景 ${scenes.length + 1}`
+  }
+
+  scenes.push(row)
+
+  uploadCache.value = [] // 清空缓存
+}
 </script>
 
 <template>
@@ -635,6 +692,24 @@ async function importConfig(e: Event) {
       <button class="btn" @click="exportConfig" :disabled="scenes.length===0">导出配置文件</button>
       <input type="file" accept="application/json" @change="importConfig" style="display:none" id="import-json"/>
       <label for="import-json" class="btn">导入配置文件</label>
+
+      <div class="upload-cache">
+        <input type="file" id="upload-cache-input" accept="image/*" style="display:none" @change="handleSingleUpload"/>
+        <label for="upload-cache-input" class="btn">单个导入</label>
+
+        <div class="cache">
+          <p>缓存（{{ uploadCache.length }}/{{ methodCount }}）</p>
+          <ul>
+            <li v-for="(f,i) in uploadCache" :key="i">{{ f.name }}</li>
+          </ul>
+          <el-button type="primary" @click="confirmScene" :disabled="uploadCache.length !== methodCount">
+            添加到场景
+          </el-button>
+          <el-button type="danger" @click="clearCache" :disabled="uploadCache.length === 0">
+            清空缓存
+          </el-button>
+        </div>
+      </div>
       <label class="inline">
         方法数：
         <input
@@ -835,6 +910,39 @@ async function importConfig(e: Event) {
 
   .meta {
     opacity: 0.8;
+  }
+
+  .upload-cache {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 4px;
+    margin-left: 12px;
+    border: 1px solid #8886;
+
+    .cache {
+      display: flex;
+      flex-direction: row;
+      gap: 6px;
+      padding: 8px;
+
+      p {
+        margin: 0;
+        font-weight: bold;
+      }
+
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+
+        li {
+          margin: 2px 0;
+          word-break: break-all;
+        }
+      }
+    }
   }
 }
 
