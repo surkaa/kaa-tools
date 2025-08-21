@@ -553,42 +553,6 @@ function onMethodCountInput(event: Event) {
 
 // ===== 持久化场景数据 =====
 
-// 1. 保存配置到 localStorage（轻量保存，不包含图片的 base64）
-function persistScenes() {
-  localStorage.setItem('scenes', JSON.stringify(scenes.map(s => ({
-    name: s.name,
-    baseW: s.baseW,
-    baseH: s.baseH,
-    selection: s.selections,
-    inset: s.insets,
-    images: s.images.map(img => ({
-      name: img.name,
-      url: img.url   // objectURL，刷新后可能失效
-    }))
-  }))));
-  ElMessage.success('场景已保存到本地存储。');
-}
-
-// 2. 从 localStorage 恢复
-function restoreScenes() {
-  const raw = localStorage.getItem('scenes')
-  if (!raw) return
-  try {
-    const arr = JSON.parse(raw)
-    scenes.splice(0, scenes.length, ...arr.map((s: any) => ({
-      ...s,
-      images: s.images.map((img: any) => ({
-        ...img,
-        el: null, // 需要重新 attach
-        file: null
-      }))
-    })));
-    ElMessage.success('场景已从本地存储恢复。');
-  } catch (e) {
-    console.error('恢复场景失败:', e)
-  }
-}
-
 // 3. 导出配置文件（含 base64）
 async function exportConfig() {
   try {
@@ -735,12 +699,10 @@ async function confirmScene() {
       <button class="btn primary" @click="exportComposite" :disabled="scenes.length===0">
         导出对比图
       </button>
-      <button class="btn" @click="persistScenes">保存到本地存储</button>
-      <button class="btn" @click="restoreScenes">从本地存储恢复</button>
 
-      <button class="btn" @click="exportConfig" :disabled="scenes.length===0">导出配置文件</button>
+      <button class="btn" @click="exportConfig" :disabled="scenes.length===0">导出本次项目</button>
       <input type="file" accept="application/json" @change="importConfig" style="display:none" id="import-json"/>
-      <label for="import-json" class="btn">导入配置文件</label>
+      <label for="import-json" class="btn">导入项目</label>
 
       <div class="upload-cache">
         <input type="file" id="upload-cache-input" accept="image/*" style="display:none" @change="handleSingleUpload"/>
