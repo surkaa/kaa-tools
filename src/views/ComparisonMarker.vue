@@ -37,6 +37,10 @@ type SceneRow = {
 const methodCount = useLocalStorageRef<number>('methodCount', 5) // 默认 5 种方法
 const methodNames = useLocalStorageRef<string[]>('methodNames', Array.from({length: methodCount.value}, (_, i) => `Method ${i + 1}`));
 const uploadCache = ref<ImgItem[]>([]) // 临时缓存
+const uploadBase = ref({
+  width: 0,
+  height: 0
+})
 const scenes = reactive<SceneRow[]>([])
 
 const isDrawing = ref(false)
@@ -635,6 +639,18 @@ async function handleSingleUpload(event: Event) {
   const url = URL.createObjectURL(file)
   const dims = await getImageSize(url)
 
+  if (uploadCache.value.length) {
+    if (dims.width !== uploadBase.value.width || dims.height !== uploadBase.value.height) {
+      ElMessage.error(`上传的图片尺寸不一致：当前缓存基准尺寸为 ${uploadBase.value.width}×${uploadBase.value.height}，但新图片为 ${dims.width}×${dims.height}。`)
+      URL.revokeObjectURL(url)
+      return
+    }
+  } else {
+    // 第一次上传，设置基准尺寸
+    uploadBase.value.width = dims.width
+    uploadBase.value.height = dims.height
+  }
+
   uploadCache.value.push({
     file,
     url,
@@ -652,6 +668,7 @@ async function handleSingleUpload(event: Event) {
 // 清空缓存
 function clearCache() {
   uploadCache.value = []
+  uploadBase.value = {width: 0, height: 0} // 重置基准尺寸
 }
 
 // 缓存转场景
@@ -675,7 +692,7 @@ async function confirmScene() {
 
   scenes.push(row)
 
-  uploadCache.value = [] // 清空缓存
+  clearCache();
 }
 </script>
 
