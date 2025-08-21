@@ -573,8 +573,8 @@ async function exportConfig() {
       name: s.name,
       baseW: s.baseW,
       baseH: s.baseH,
-      selection: s.selections,
-      inset: s.insets,
+      selections: s.selections,
+      insets: s.insets,
       images: await Promise.all(s.images.map(async (img) => {
         if (!img.url) return {name: img.name}
         const base64 = await fetch(img.url).then(r => r.blob()).then(blob => new Promise<string>((resolve) => {
