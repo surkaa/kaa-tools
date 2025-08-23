@@ -13,6 +13,7 @@ type Mode = "grid" | "highlight"
 const images = ref<ImgItem[]>([])
 
 const mode = ref<Mode>("grid") // grid=并排，highlight=高亮差异
+const selected = ref<number[]>([]) // 选中的图片索引
 
 // highlight 生成结果
 const highlightUrl = ref<string | null>(null)
@@ -39,11 +40,6 @@ async function handleUpload(e: Event) {
   }
   images.value = loaded
   input.value = ""
-
-  // 如果两张图都上传了，预生成 highlight
-  if (loaded.length === 2) {
-    generateHighlight(loaded[0], loaded[1])
-  }
 }
 
 function getImageSize(url: string): Promise<{ width: number; height: number }> {
@@ -53,6 +49,18 @@ function getImageSize(url: string): Promise<{ width: number; height: number }> {
     img.onerror = reject
     img.src = url
   })
+}
+
+function toggleSelect(index: number) {
+  if (selected.value.includes(index)) {
+    selected.value = selected.value.filter(i => i !== index)
+  } else {
+    if (selected.value.length >= 2) {
+      // 只允许同时选 2 张
+      selected.value.shift()
+    }
+    selected.value.push(index)
+  }
 }
 
 // 生成高亮差异图
@@ -152,6 +160,17 @@ function toggleMode(m: Mode) {
 }
 
 window.addEventListener("mouseup", onMouseUp)
+
+async function doHighlight() {
+  if (selected.value.length !== 2) {
+    alert("请选择两张图进行对比")
+    return
+  }
+  const img1 = images.value[selected.value[0]]
+  const img2 = images.value[selected.value[1]]
+  await generateHighlight(img1, img2)
+  mode.value = "highlight"
+}
 </script>
 
 <template>
@@ -159,13 +178,13 @@ window.addEventListener("mouseup", onMouseUp)
     <div class="toolbar">
       <input type="file" accept="image/*" multiple @change="handleUpload"/>
       <button class="btn" @click="toggleMode('grid')">并排对比</button>
-      <button class="btn" @click="toggleMode('highlight')" :disabled="images.length!==2">高亮差异</button>
+      <button class="btn" @click="doHighlight()" :disabled="selected.length!==2">高亮差异</button>
     </div>
 
     <div class="viewer" @wheel="onWheel" @mousedown="onMouseDown" @mousemove="onMouseMove">
       <!-- 并排 -->
       <div v-if="mode==='grid'" class="grid" :style="{ gridTemplateColumns: `repeat(${images.length}, 1fr)` }">
-        <div v-for="(img,i) in images" :key="i" class="img-wrap">
+        <div v-for="(img,i) in images" :key="i" class="img-wrap" :class="{selected: selected.includes(i)}" @click="toggleSelect(i)">
           <img
               :src="img.url"
               :style="{transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`} "
@@ -232,6 +251,10 @@ window.addEventListener("mouseup", onMouseUp)
         flex-direction: column;
         border: 1px solid #ccc;
         border-radius: 4px;
+
+        &.selected {
+          border: 2px solid #3b82f6;
+        }
 
         img {
           max-width: 100%;
