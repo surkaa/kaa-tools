@@ -8,9 +8,14 @@ type ImgItem = {
   name: string
 }
 
+type Mode = "grid" | "highlight"
+
 const images = ref<ImgItem[]>([])
 
-const mode = ref<"grid">("grid") // 对比模式：grid=并排，slider=滑动
+const mode = ref<Mode>("grid") // grid=并排，highlight=高亮差异
+
+// highlight 生成结果
+const highlightUrl = ref<string | null>(null)
 
 // 同步缩放/平移
 const zoom = ref(1)
@@ -34,6 +39,11 @@ async function handleUpload(e: Event) {
   }
   images.value = loaded
   input.value = ""
+
+  // 如果两张图都上传了，预生成 highlight
+  if (loaded.length === 2) {
+    generateHighlight(loaded[0], loaded[1])
+  }
 }
 
 function getImageSize(url: string): Promise<{ width: number; height: number }> {
@@ -42,6 +52,73 @@ function getImageSize(url: string): Promise<{ width: number; height: number }> {
     img.onload = () => resolve({width: img.naturalWidth, height: img.naturalHeight})
     img.onerror = reject
     img.src = url
+  })
+}
+
+// 生成高亮差异图
+async function generateHighlight(img1: ImgItem, img2: ImgItem) {
+  return new Promise<void>((resolve) => {
+    const image1 = new Image()
+    const image2 = new Image()
+    let loaded = 0
+
+    const onLoad = () => {
+      loaded++
+      if (loaded < 2) return
+
+      const w = Math.min(image1.width, image2.width)
+      const h = Math.min(image1.height, image2.height)
+      const canvas = document.createElement("canvas")
+      canvas.width = w
+      canvas.height = h
+      const ctx = canvas.getContext("2d")!
+
+      // 绘制图1
+      ctx.drawImage(image1, 0, 0, w, h)
+      const imgData1 = ctx.getImageData(0, 0, w, h)
+
+      // 绘制图2
+      ctx.clearRect(0, 0, w, h)
+      ctx.drawImage(image2, 0, 0, w, h)
+      const imgData2 = ctx.getImageData(0, 0, w, h)
+
+      const out = ctx.createImageData(w, h)
+      const threshold = 50 // 可调阈值
+
+      for (let i = 0; i < imgData1.data.length; i += 4) {
+        const r1 = imgData1.data[i]
+        const g1 = imgData1.data[i + 1]
+        const b1 = imgData1.data[i + 2]
+        const r2 = imgData2.data[i]
+        const g2 = imgData2.data[i + 1]
+        const b2 = imgData2.data[i + 2]
+
+        const diff = Math.abs(r1 - r2) + Math.abs(g1 - g2) + Math.abs(b1 - b2)
+
+        if (diff > threshold) {
+          // 差异像素用品红色高亮
+          out.data[i] = 255
+          out.data[i + 1] = 0
+          out.data[i + 2] = 255
+          out.data[i + 3] = 255
+        } else {
+          // 保持图1原像素
+          out.data[i] = r1
+          out.data[i + 1] = g1
+          out.data[i + 2] = b1
+          out.data[i + 3] = 255
+        }
+      }
+
+      ctx.putImageData(out, 0, 0)
+      highlightUrl.value = canvas.toDataURL()
+      resolve()
+    }
+
+    image1.onload = onLoad
+    image2.onload = onLoad
+    image1.src = img1.url
+    image2.src = img2.url
   })
 }
 
@@ -68,6 +145,12 @@ function onMouseUp() {
   dragging = false
 }
 
+function toggleMode(m: Mode) {
+  console.log('click', m)
+  if (m === "highlight" && images.value.length !== 2) return
+  mode.value = m
+}
+
 window.addEventListener("mouseup", onMouseUp)
 </script>
 
@@ -75,7 +158,8 @@ window.addEventListener("mouseup", onMouseUp)
   <div id="multi-comparator">
     <div class="toolbar">
       <input type="file" accept="image/*" multiple @change="handleUpload"/>
-      <button class="btn" @click="mode = 'grid'">并排对比</button>
+      <button class="btn" @click="toggleMode('grid')">并排对比</button>
+      <button class="btn" @click="toggleMode('highlight')" :disabled="images.length!==2">高亮差异</button>
     </div>
 
     <div class="viewer" @wheel="onWheel" @mousedown="onMouseDown" @mousemove="onMouseMove">
@@ -84,7 +168,7 @@ window.addEventListener("mouseup", onMouseUp)
         <div v-for="(img,i) in images" :key="i" class="img-wrap">
           <img
               :src="img.url"
-              :style="{transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`}"
+              :style="{transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`} "
               draggable="false"
               alt=""
           />
@@ -92,6 +176,13 @@ window.addEventListener("mouseup", onMouseUp)
             {{ img.name }}
           </p>
         </div>
+      </div>
+
+      <!-- highlight 模式 -->
+      <div v-if="mode==='highlight' && highlightUrl" class="highlight-wrap">
+        <img :src="highlightUrl"
+             :style="{transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`}"
+             draggable="false" alt="highlight"/>
       </div>
     </div>
   </div>
@@ -160,6 +251,17 @@ window.addEventListener("mouseup", onMouseUp)
           word-break: break-all;
           z-index: 2;
         }
+      }
+    }
+
+    .highlight-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      img {
+        max-width: 100%;
+        max-height: 100%;
       }
     }
   }
