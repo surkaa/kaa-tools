@@ -31,6 +31,9 @@ type SceneRow = {
   name: string;
 }
 
+const maxRate = 0.8 as const;
+const autoInsetThreshold = 0.2 as const; // 选区面积占比小于该值时，自动显示放大图
+
 // const sceneLabelW = 60 // 左边预留 100px 放场景名字
 // const methodLabelH = 40 // 上边预留 40px 放方法名字
 
@@ -66,7 +69,7 @@ function imageAreaThreshold(sceneIdx: number) {
     ElMessage.error('请先选中一个选区。')
     return Infinity
   }
-  return row.baseW * row.baseH * 0.2;
+  return row.baseW * row.baseH * autoInsetThreshold;
 }
 
 function addScene() {
@@ -241,8 +244,8 @@ function getInsetRenderSize(sceneIdx: number, sId: number) {
   if (!sel) return {w: 0, h: 0}
   const w = Math.floor(sel.w * inset.zoom)
   const h = Math.floor(sel.h * inset.zoom)
-  const maxW = Math.floor(s.baseW * 0.65)
-  const maxH = Math.floor(s.baseH * 0.65)
+  const maxW = Math.floor(s.baseW * maxRate)
+  const maxH = Math.floor(s.baseH * maxRate)
   return {w: Math.min(w, maxW), h: Math.min(h, maxH)}
 }
 
@@ -253,7 +256,8 @@ function onWheelInset(ev: WheelEvent, sceneIdx: number, sId: number) {
   if (!inset.visible) return
   ev.preventDefault()
   const s = scenes[sceneIdx];
-  inset.zoom = clamp(inset.zoom + (ev.deltaY < 0 ? 0.2 : -0.2), 1, 8)
+  const wheelTime = 0.4;
+  inset.zoom = clamp(inset.zoom + (ev.deltaY < 0 ? wheelTime : -wheelTime), 1, 8)
   // 缩放后保证仍在边界内
   const sz = getInsetRenderSize(sceneIdx, sId);
   inset.x = clamp(inset.x, 0, s.baseW - sz.w)
@@ -467,8 +471,8 @@ function getInsetSizeForExport(row: SceneRow, s: number) {
 
   const w = Math.floor(sel.w * inset.zoom)
   const h = Math.floor(sel.h * inset.zoom)
-  const maxW = Math.floor((row.baseW || 0) * 0.65)
-  const maxH = Math.floor((row.baseH || 0) * 0.65)
+  const maxW = Math.floor((row.baseW || 0) * maxRate)
+  const maxH = Math.floor((row.baseH || 0) * maxRate)
   return {w: Math.min(w, maxW), h: Math.min(h, maxH)}
 }
 
