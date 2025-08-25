@@ -256,7 +256,7 @@ function onWheelInset(ev: WheelEvent, sceneIdx: number, sId: number) {
   if (!inset.visible) return
   ev.preventDefault()
   const s = scenes[sceneIdx];
-  const wheelTime = 0.4;
+  const wheelTime = 0.1;
   inset.zoom = clamp(inset.zoom + (ev.deltaY < 0 ? wheelTime : -wheelTime), 1, 8)
   // 缩放后保证仍在边界内
   const sz = getInsetRenderSize(sceneIdx, sId);
