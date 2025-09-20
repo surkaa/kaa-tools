@@ -82,6 +82,14 @@ const routes: RouteRecordRaw[] = [
         meta: {
             title: '图片对比'
         }
+    },
+    {
+        name: 'references-tools',
+        path: '/references-tools',
+        component: () => import('../views/ReferencesTools.vue'),
+        meta: {
+            title: '参考文献工具'
+        }
     }
 ]
 
