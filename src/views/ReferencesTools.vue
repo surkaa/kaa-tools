@@ -13,17 +13,17 @@ function parseBibtex(bib: string) {
     const typeMatch = entry.match(/^\w+/);
     const type = typeMatch ? typeMatch[0].toLowerCase() : "misc";
 
-    const authorMatch = entry.match(/author=\{([^}]+)\}/i);
-    const titleMatch = entry.match(/title=\{([^}]+)\}/i);
-    const journalMatch = entry.match(/journal=\{([^}]+)\}/i);
-    const booktitleMatch = entry.match(/booktitle=\{([^}]+)\}/i);
-    const publisherMatch = entry.match(/publisher=\{([^}]+)\}/i);
-    const organizationMatch = entry.match(/organization=\{([^}]+)\}/i);
-    const schoolMatch = entry.match(/school=\{([^}]+)\}/i);
-    const yearMatch = entry.match(/year=\{([^}]+)\}/i);
-    const volumeMatch = entry.match(/volume=\{([^}]+)\}/i);
-    const numberMatch = entry.match(/number=\{([^}]+)\}/i);
-    const pagesMatch = entry.match(/pages=\{([^}]+)\}/i);
+    const authorMatch = entry.match(/author=\{([^}]+)}/i);
+    const titleMatch = entry.match(/title=\{([^}]+)}/i);
+    const journalMatch = entry.match(/journal=\{([^}]+)}/i);
+    const booktitleMatch = entry.match(/booktitle=\{([^}]+)}/i);
+    const publisherMatch = entry.match(/publisher=\{([^}]+)}/i);
+    const organizationMatch = entry.match(/organization=\{([^}]+)}/i);
+    const schoolMatch = entry.match(/school=\{([^}]+)}/i);
+    const yearMatch = entry.match(/year=\{([^}]+)}/i);
+    const volumeMatch = entry.match(/volume=\{([^}]+)}/i);
+    const numberMatch = entry.match(/number=\{([^}]+)}/i);
+    const pagesMatch = entry.match(/pages=\{([^}]+)}/i);
 
     let authors = authorMatch ? authorMatch[1].split(" and ").map(a => formatAuthor(a)) : [];
     if (authors.length > 3) {
