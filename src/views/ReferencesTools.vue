@@ -91,6 +91,34 @@ function copyOutput() {
     ElMessage.error("Failed to copy: " + err);
   });
 }
+
+function exportCSV() {
+  if (!bibInput.value.trim()) {
+    alert("请先粘贴并转换 BibTeX 条目再导出。");
+    return;
+  }
+
+  const entries = bibInput.value.split("@").filter(e => e.trim() !== "");
+  const formattedRefs = output.value.split("\n\n");
+
+  let csvContent = "序号,标识符,参考文献\n";
+
+  entries.forEach((entry, idx) => {
+    const keyMatch = entry.match(/^\w+\{([^,]+)/);
+    const key = keyMatch ? keyMatch[1].trim() : `ref${idx + 1}`;
+    const ref = formattedRefs[idx] ? formattedRefs[idx].replace(/\n/g, " ") : "";
+    csvContent += `${idx + 1},"${key}","${ref}"\n`;
+  });
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", "references.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
 </script>
 
 <template>
@@ -99,6 +127,7 @@ function copyOutput() {
     <textarea v-model="bibInput" rows="10" placeholder="在这里粘贴BibTeX条目，可以多条"></textarea>
     <button @click="convert">转换</button>
     <button v-if="output" @click="copyOutput">复制输出</button>
+    <button v-if="output" @click="exportCSV">导出为CSV</button>
     <h3>输出结果：</h3>
     <pre>{{ output }}</pre>
   </div>
