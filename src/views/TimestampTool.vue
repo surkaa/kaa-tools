@@ -154,176 +154,320 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div id="timestamp-tool">
-    <h1 class="title">Timestamp Tool</h1>
-    <el-form class="form" :model="formData" label-width="auto">
-      <el-row :gutter="cardRowGutter">
-        <el-col :span="cardColSpan">
-          <el-form-item label="秒级别时间戳">
-            <el-input
-                v-model="formData.secondTimestamp"
-                placeholder="输入秒级别时间戳"
-                @input="convertTimestamp(ReloadType.InputSecondsTimestamp)"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :span="cardColBtnSpan">
-          <el-button
-              class="paste-button"
-              title="粘贴剪贴板中的秒别时间戳到输入框"
-              @click="pasteTimestamp(ReloadType.InputSecondsTimestamp)"
-          >
-            <el-icon>
-              <EditPen/>
-            </el-icon>
-          </el-button>
-        </el-col>
-      </el-row>
-      <el-row :gutter="cardRowGutter">
-        <el-col :span="cardColSpan">
-          <el-form-item label="毫秒别时间戳">
-            <el-input
-                v-model="formData.millisecondTimestamp"
-                placeholder="输入毫秒别时间戳"
-                @input="convertTimestamp(ReloadType.InputMillisecondsTimestamp)"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :span="cardColBtnSpan">
-          <el-button
-              class="paste-button"
-              title="粘贴剪贴板中的毫秒别时间戳到输入框"
-              @click="pasteTimestamp(ReloadType.InputMillisecondsTimestamp)"
-          >
-            <el-icon>
-              <EditPen/>
-            </el-icon>
-          </el-button>
-        </el-col>
-      </el-row>
-      <el-row :gutter="cardRowGutter">
-        <el-col :span="cardColSpan">
-          <el-form-item label="日期">
-            <el-input
-                v-model="formData.date"
-                placeholder="输入日期"
-                @input="convertTimestamp(ReloadType.InputDate)"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :span="cardColBtnSpan">
-          <el-button
-              class="paste-button"
-              title="粘贴剪贴板中的日期到输入框"
-              @click="pasteTimestamp(ReloadType.InputDate)"
-          >
-            <el-icon>
-              <EditPen/>
-            </el-icon>
-          </el-button>
-        </el-col>
-      </el-row>
-      <el-row :gutter="cardRowGutter">
-        <el-col :span="cardColSpan">
-          <el-form-item label="当前毫秒别时间戳">
-            <div class="current-timestamp">
-              <span>{{ timer }}</span>
+  <div id="timestamp-tool" class="tool-page">
+    <header class="tool-header">
+      <span class="tool-eyebrow">Time utility</span>
+      <h1 class="tool-title">时间戳转换</h1>
+      <p class="tool-description">在秒级时间戳、毫秒级时间戳与常用日期格式之间即时互转。</p>
+    </header>
+
+    <section class="converter-card surface-card">
+      <div class="card-intro">
+        <div>
+          <span class="section-index">01</span>
+          <h2>格式转换</h2>
+        </div>
+        <span class="instant-badge">输入后即时更新</span>
+      </div>
+
+      <el-form class="form" :model="formData" label-position="top">
+        <div class="convert-fields">
+          <el-row :gutter="cardRowGutter">
+            <el-col :span="cardColSpan">
+              <el-form-item label="秒级时间戳">
+                <el-input
+                    v-model="formData.secondTimestamp"
+                    placeholder="例如：1724211120"
+                    @input="convertTimestamp(ReloadType.InputSecondsTimestamp)"
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :span="cardColBtnSpan">
               <el-button
-                  link
-                  title="点击暂停/继续实时时间戳"
-                  class="current-timestamp-btn"
-                  @click="stopLive = !stopLive"
+                  class="icon-button paste-button"
+                  title="粘贴剪贴板中的秒级时间戳"
+                  @click="pasteTimestamp(ReloadType.InputSecondsTimestamp)"
               >
-                <!-- 暂停红色按钮 继续黑色三角按钮 -->
-                <div :class="{
-                'resume': stopLive,
-                'stop': !stopLive
-              }" class="stopLiveIcon"/>
+                <el-icon><EditPen/></el-icon>
               </el-button>
+            </el-col>
+          </el-row>
+
+          <el-row :gutter="cardRowGutter">
+            <el-col :span="cardColSpan">
+              <el-form-item label="毫秒级时间戳">
+                <el-input
+                    v-model="formData.millisecondTimestamp"
+                    placeholder="例如：1724211120000"
+                    @input="convertTimestamp(ReloadType.InputMillisecondsTimestamp)"
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :span="cardColBtnSpan">
+              <el-button
+                  class="icon-button paste-button"
+                  title="粘贴剪贴板中的毫秒级时间戳"
+                  @click="pasteTimestamp(ReloadType.InputMillisecondsTimestamp)"
+              >
+                <el-icon><EditPen/></el-icon>
+              </el-button>
+            </el-col>
+          </el-row>
+
+          <el-row :gutter="cardRowGutter">
+            <el-col :span="cardColSpan">
+              <el-form-item label="日期与时间">
+                <el-input
+                    v-model="formData.date"
+                    placeholder="YYYY-MM-DD HH:mm:ss"
+                    @input="convertTimestamp(ReloadType.InputDate)"
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :span="cardColBtnSpan">
+              <el-button
+                  class="icon-button paste-button"
+                  title="粘贴剪贴板中的日期"
+                  @click="pasteTimestamp(ReloadType.InputDate)"
+              >
+                <el-icon><EditPen/></el-icon>
+              </el-button>
+            </el-col>
+          </el-row>
+        </div>
+
+        <div class="live-panel">
+          <div class="live-heading">
+            <div>
+              <span class="section-index">02</span>
+              <h2>当前时间</h2>
             </div>
-          </el-form-item>
-        </el-col>
-        <el-col :span="cardColBtnSpan">
-          <el-button
-              class="copy-button"
-              title="复制当前毫秒别时间戳到剪贴板"
-              @click="copyTimestampToClipboard()"
-          >
-            <el-icon>
-              <CopyDocument/>
-            </el-icon>
-          </el-button>
-        </el-col>
-      </el-row>
-      <el-row :gutter="cardRowGutter">
-        <el-col :span="cardColSpan">
-          <el-form-item label="当前时间">
-            {{ formattedTime }}
-          </el-form-item>
-        </el-col>
-        <el-col :span="cardColBtnSpan">
-          <el-button
-              class="copy-button"
-              title="复制当前时间到剪贴板"
-              @click="copyFormattedTimeToClipboard()"
-          >
-            <el-icon>
-              <CopyDocument/>
-            </el-icon>
-          </el-button>
-        </el-col>
-      </el-row>
-    </el-form>
+            <span class="live-state" :class="{'is-paused': stopLive}">
+              <i></i>{{ stopLive ? '已暂停' : '实时更新' }}
+            </span>
+          </div>
+
+          <el-row :gutter="cardRowGutter">
+            <el-col :span="cardColSpan">
+              <el-form-item label="当前毫秒级时间戳">
+                <div class="current-timestamp">
+                  <span>{{ timer }}</span>
+                  <el-button
+                      link
+                      title="点击暂停或继续"
+                      class="current-timestamp-btn"
+                      @click="stopLive = !stopLive"
+                  >
+                    <div :class="{'resume': stopLive, 'stop': !stopLive}" class="stopLiveIcon"/>
+                  </el-button>
+                </div>
+              </el-form-item>
+            </el-col>
+            <el-col :span="cardColBtnSpan">
+              <el-button class="icon-button" title="复制当前毫秒级时间戳" @click="copyTimestampToClipboard()">
+                <el-icon><CopyDocument/></el-icon>
+              </el-button>
+            </el-col>
+          </el-row>
+
+          <el-row :gutter="cardRowGutter">
+            <el-col :span="cardColSpan">
+              <el-form-item label="当前日期与时间">
+                <div class="formatted-time">{{ formattedTime }}</div>
+              </el-form-item>
+            </el-col>
+            <el-col :span="cardColBtnSpan">
+              <el-button class="icon-button" title="复制当前时间" @click="copyFormattedTimeToClipboard()">
+                <el-icon><CopyDocument/></el-icon>
+              </el-button>
+            </el-col>
+          </el-row>
+        </div>
+      </el-form>
+    </section>
   </div>
 </template>
 
 <style scoped lang="scss">
 #timestamp-tool {
-  width: 100vw;
-  height: 100vh;
-  background-image: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%);
+  width: 100%;
+}
 
-  .title {
-    color: #1a1a1a;
+.converter-card {
+  width: min(100%, 920px);
+  margin: 0 auto;
+  padding: clamp(22px, 4vw, 42px);
+}
+
+.card-intro,
+.live-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+
+  > div {
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
 
-  .form {
-    // 占居宽度尽量小
-    width: fit-content;
-    margin: 0 auto;
+  h2 {
+    margin: 0;
+    font-size: 1.08rem;
+    letter-spacing: -0.02em;
+  }
+}
 
-    .current-timestamp {
-      display: flex;
-      width: 100%;
+.section-index {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 9px;
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.66rem;
+  font-weight: 700;
+}
 
-      .current-timestamp-btn {
-        margin-left: auto;
+.instant-badge,
+.live-state {
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--surface-soft);
+  font-size: 0.7rem;
+}
 
-        .stopLiveIcon {
-          width: 20px;
-          height: 20px;
-          border-radius: 3px;
-        }
+.form {
+  margin-top: 28px;
+}
 
-        .stop {
-          background-color: rgba(255,0,0,0.61);
-        }
+.convert-fields {
+  display: grid;
+  gap: 4px;
+}
 
-        .resume {
-          background-color: rgba(0,0,0,0.61);
-        }
-      }
+:deep(.el-row) {
+  align-items: end;
+}
 
-    }
+:deep(.el-form-item) {
+  margin-bottom: 16px;
+}
+
+:deep(.el-form-item__label) {
+  padding-bottom: 7px;
+  color: #52615d;
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+:deep(.el-input__wrapper) {
+  min-height: 48px;
+  padding-inline: 15px;
+}
+
+.icon-button {
+  width: 44px;
+  height: 48px;
+  margin-bottom: 16px;
+  padding: 0;
+  border-color: var(--line);
+  color: var(--accent-strong);
+  background: #f6faf8;
+}
+
+.live-panel {
+  margin-top: 16px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+}
+
+.live-heading {
+  margin-bottom: 24px;
+}
+
+.live-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #137657;
+  background: #e6f8f1;
+
+  i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #21b787;
+    box-shadow: 0 0 0 4px rgba(33, 183, 135, 0.12);
   }
 
-  .current {
-    margin-top: 20px;
-    text-align: center;
+  &.is-paused {
+    color: #9b6d19;
+    background: #fff5df;
 
-    .copy-button {
-      margin-left: 10px;
+    i {
+      background: #dfa538;
+      box-shadow: 0 0 0 4px rgba(223, 165, 56, 0.12);
     }
+  }
+}
+
+.current-timestamp,
+.formatted-time {
+  width: 100%;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 15px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: #1d3c34;
+  background: #f5f9f7;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.9rem;
+}
+
+.current-timestamp-btn {
+  min-height: auto;
+  margin-left: auto;
+  padding: 6px;
+}
+
+.stopLiveIcon {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.stop { background: #e65f5f; }
+
+.resume {
+  width: 0;
+  height: 0;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 10px solid #21a979;
+  border-radius: 0;
+}
+
+@media (max-width: 560px) {
+  .converter-card {
+    padding: 22px 18px;
+    border-radius: 22px;
+  }
+
+  .instant-badge {
+    display: none;
+  }
+
+  .current-timestamp,
+  .formatted-time {
+    padding-inline: 11px;
+    font-size: 0.76rem;
   }
 }
 </style>

@@ -218,44 +218,81 @@ onMounted(() => {
 </script>
 
 <template>
-  <div id="cut-pdf">
-    <div id="pdf-view">
-      <div
-          v-for="page in pageCount" :key="pdfKey + page"
-          class="page" :class="{'selected': selected.includes(page), 'rendering': !renderSuccessList.includes(page)}"
-      >
-        <canvas :id="`page-${page}`" @click="selectPage(page)"/>
-        <span class="page-number" v-text="page"/>
-        <div class="hover-show">
-          <div class="checkbox" @click="selectPage(page)">
-            <input type="checkbox" :checked="selected.includes(page)"/>
-          </div>
-          <div class="magnify" @click="showDetail(page)">
-            🔍
+  <div id="cut-pdf" class="tool-page">
+    <header class="tool-header">
+      <span class="tool-eyebrow">Document utility</span>
+      <h1 class="tool-title">PDF 页面裁剪</h1>
+      <p class="tool-description">上传 PDF，直观选择需要保留的页面，并生成一份新的文档。</p>
+    </header>
+
+    <main class="pdf-workspace surface-card">
+      <section id="pdf-view">
+        <div v-if="pageCount === 0" class="pdf-empty">
+          <div class="document-symbol"><i></i><i></i><i></i></div>
+          <h2>先选择一份 PDF 文档</h2>
+          <p>上传后会在这里生成页面缩略图，点击页面即可选择。</p>
+        </div>
+
+        <div
+            v-for="page in pageCount" :key="pdfKey + page"
+            class="page" :class="{'selected': selected.includes(page), 'rendering': !renderSuccessList.includes(page)}"
+        >
+          <canvas :id="`page-${page}`" @click="selectPage(page)"/>
+          <span class="page-number" v-text="page"/>
+          <div class="hover-show">
+            <div class="checkbox" @click="selectPage(page)">
+              <input type="checkbox" :checked="selected.includes(page)"/>
+            </div>
+            <button class="magnify" type="button" title="查看大图" @click="showDetail(page)">↗</button>
           </div>
         </div>
-      </div>
-    </div>
-    <div id="operate">
-      <input type="file" @change="inputChange" accept="application/pdf"/>
-      <div class="scale" v-show="pageCount > 0">
-        <label for="scale-input-number">缩略图大小： </label>
-        <el-input-number id="scale-input-number" v-model="renderScale" :step="scaleStep" :max="2" :min="0.5"/>
-      </div>
-      <el-button-group class="selected-operate-group">
-        <el-button v-show="selected.length > 0" @click="clearSelected" type="danger">清除选中</el-button>
-        <el-button v-show="pageCount != selected.length" @click="selectAll" type="success">全选</el-button>
-      </el-button-group>
-      <el-button
-          v-show="selected.length > 0"
-          @click="download"
-          :disabled="selected.length === pageCount"
-          :title="selected.length === pageCount ? '与原文件相同，无法下载' : ''"
-          type="primary"
-      >
-        下载选中的第{{ pageStr }}页
-      </el-button>
-    </div>
+      </section>
+
+      <aside id="operate">
+        <div class="operate-title">
+          <span>DOCUMENT</span>
+          <h2>页面操作</h2>
+          <p>选择文件后，挑选需要导出的页面。</p>
+        </div>
+
+        <div class="upload-control">
+          <input id="pdf-file-input" type="file" @change="inputChange" accept="application/pdf"/>
+          <label for="pdf-file-input"><i>＋</i><span>选择 PDF 文件</span></label>
+        </div>
+
+        <div v-show="pageCount > 0" class="document-stats">
+          <div><strong>{{ pageCount }}</strong><span>总页数</span></div>
+          <div><strong>{{ selected.length }}</strong><span>已选择</span></div>
+        </div>
+
+        <div class="scale" v-show="pageCount > 0">
+          <label for="scale-input-number">缩略图大小</label>
+          <el-input-number id="scale-input-number" v-model="renderScale" :step="scaleStep" :max="2" :min="0.5"/>
+        </div>
+
+        <el-button-group v-show="pageCount > 0" class="selected-operate-group">
+          <el-button v-show="selected.length > 0" @click="clearSelected" type="danger">清除选中</el-button>
+          <el-button v-show="pageCount != selected.length" @click="selectAll">全选页面</el-button>
+        </el-button-group>
+
+        <el-button
+            v-show="selected.length > 0"
+            class="download-button"
+            @click="download"
+            :disabled="selected.length === pageCount"
+            :title="selected.length === pageCount ? '与原文件相同，无法下载' : ''"
+            type="primary"
+        >
+          下载第 {{ pageStr }} 页
+        </el-button>
+
+        <div class="operate-note">
+          <i></i>
+          <span>生成过程在浏览器内完成，文件不会被上传。</span>
+        </div>
+      </aside>
+    </main>
+
     <el-dialog v-model="showDetailDialog.visible" :lock-scroll="false">
       <template #header>
         <span>第{{ showDetailDialog.page + 1 }}页</span>
@@ -273,126 +310,360 @@ onMounted(() => {
 <style scoped lang="scss">
 #cut-pdf {
   width: 100%;
-  height: 100%;
-  background-image: linear-gradient(120deg, #d4fc79 0%, #96e6a1 100%);
+}
+
+.pdf-workspace {
+  width: min(100%, 1320px);
+  min-height: 570px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+#pdf-view {
+  position: relative;
+  max-height: 68vh;
+  min-height: 570px;
   display: flex;
-  flex-direction: row;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 22px;
+  padding: 30px;
+  overflow: auto;
+  background:
+      linear-gradient(45deg, rgba(22, 61, 50, 0.025) 25%, transparent 25%, transparent 75%, rgba(22, 61, 50, 0.025) 75%),
+      linear-gradient(45deg, rgba(22, 61, 50, 0.025) 25%, transparent 25%, transparent 75%, rgba(22, 61, 50, 0.025) 75%),
+      #f7faf9;
+  background-position: 0 0, 12px 12px;
+  background-size: 24px 24px;
+}
+
+.pdf-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  padding: 30px;
+  text-align: center;
+
+  h2 {
+    margin: 20px 0 7px;
+    color: #314842;
+    font-size: 1rem;
+  }
+
+  p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.73rem;
+  }
+}
+
+.document-symbol {
+  width: 58px;
+  height: 68px;
+  display: grid;
+  align-content: center;
+  gap: 7px;
+  padding: 0 13px;
+  border: 1px solid rgba(17, 168, 121, 0.2);
+  border-radius: 15px;
+  background: var(--accent-soft);
+  box-shadow: 0 12px 30px rgba(17, 168, 121, 0.1);
+
+  i {
+    height: 2px;
+    border-radius: 99px;
+    background: #58bd9b;
+
+    &:last-child { width: 62%; }
+  }
+}
+
+.page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  padding: 8px 8px 10px;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(31, 65, 56, 0.09);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 14px 34px rgba(31, 65, 56, 0.14);
+    transform: translateY(-3px);
+
+    .hover-show { opacity: 1; }
+  }
+
+  &.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(17, 168, 121, 0.12), 0 14px 34px rgba(31, 65, 56, 0.12);
+
+    .hover-show { opacity: 1; }
+    .page-number { color: var(--accent-strong); }
+  }
+
+  &.rendering {
+    min-width: 160px;
+    min-height: 220px;
+    background: linear-gradient(100deg, #edf2f0 20%, #f7faf9 40%, #edf2f0 60%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+
+    .hover-show,
+    .page-number { display: none; }
+  }
+
+  canvas {
+    display: block;
+    max-width: 100%;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .page-number {
+    margin-top: 9px;
+    color: #798782;
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 0.67rem;
+    font-weight: 650;
+  }
+
+  .hover-show {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+  }
+
+  .checkbox {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    background: rgba(7, 27, 21, 0.78);
+    cursor: pointer;
+
+    input {
+      accent-color: #33c594;
+      pointer-events: none;
+    }
+  }
+
+  .magnify {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    color: #dff8ef;
+    background: rgba(7, 27, 21, 0.78);
+    cursor: pointer;
+    font-size: 0.78rem;
+  }
+}
+
+@keyframes shimmer {
+  to { background-position: -200% 0; }
+}
+
+#operate {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 30px 24px;
+  border-left: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.operate-title {
+  span {
+    color: var(--accent-strong);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+  }
+
+  h2 {
+    margin: 7px 0;
+    color: #263d37;
+    font-size: 1.25rem;
+    letter-spacing: -0.035em;
+  }
+
+  p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.72rem;
+    line-height: 1.6;
+  }
+}
+
+.upload-control {
+  input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    opacity: 0;
+  }
+
+  label {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    border: 1px dashed rgba(17, 168, 121, 0.38);
+    border-radius: 12px;
+    color: var(--accent-strong);
+    background: var(--accent-soft);
+    cursor: pointer;
+    font-size: 0.76rem;
+    font-weight: 650;
+
+    i {
+      font-size: 1.05rem;
+      font-style: normal;
+    }
+  }
+}
+
+.document-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+
+  > div {
+    display: grid;
+    gap: 3px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #f7faf9;
+
+    strong {
+      color: #24453b;
+      font-size: 1.25rem;
+    }
+
+    span {
+      color: var(--muted);
+      font-size: 0.64rem;
+    }
+  }
+}
+
+.scale {
+  display: grid;
+  gap: 8px;
+
+  label {
+    color: #53625e;
+    font-size: 0.7rem;
+    font-weight: 650;
+  }
+}
+
+:deep(.scale .el-input-number) {
+  width: 100%;
+  min-height: 43px;
+}
+
+.selected-operate-group {
+  width: 100%;
+  display: flex;
+
+  :deep(.el-button) {
+    flex: 1;
+  }
+}
+
+.download-button {
+  width: 100%;
+  min-height: 48px;
+  white-space: normal;
+}
+
+.operate-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: auto;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.65rem;
+  line-height: 1.55;
+
+  i {
+    width: 7px;
+    height: 7px;
+    flex: 0 0 7px;
+    margin-top: 3px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px rgba(17, 168, 121, 0.1);
+  }
+}
+
+.dialog-canvas {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 900px) {
+  .pdf-workspace {
+    grid-template-columns: 1fr;
+  }
 
   #pdf-view {
-    max-height: 100%;
-    width: 100%;
-    overflow: auto;
-    flex: 1;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.5rem;
-    padding: 3rem 1rem;
-    justify-content: flex-start;
-    align-items: center;
-
-    .page {
-      position: relative;
-      margin: 4px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-
-      &:hover {
-        canvas {
-          transform: scale(1.03);
-        }
-
-        .hover-show {
-          display: flex;
-        }
-      }
-
-      &.selected {
-        .hover-show {
-          display: flex;
-        }
-      }
-
-      &.rendering {
-        .hover-show {
-          display: none;
-        }
-
-        .page-number {
-          display: none;
-        }
-      }
-
-      canvas {
-        transition: .3s;
-      }
-
-      .hover-show {
-        display: none;
-        position: absolute;
-        top: 0;
-        right: 0;
-        flex-direction: row;
-        justify-content: center;
-        align-items: center;
-      }
-
-      .magnify {
-        cursor: pointer;
-      }
-
-      .page-number {
-        margin-top: 6px;
-      }
-    }
+    min-height: 480px;
+    max-height: none;
   }
 
   #operate {
-    width: clamp(300px, 20vw, 500px);
-    height: 100%;
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
-    border-left: 1px solid #ccc;
-    gap: 1rem;
-    justify-content: flex-start;
-    align-items: center;
-
-    input {
-      width: 100%;
-      padding: 0.5rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      background-color: #fff;
-      color: #333;
-      font-size: 1rem;
-      transition: all 0.3s ease;
-
-      &:focus {
-        outline: none;
-        border-color: #007bff;
-        box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
-      }
-    }
-
-    .selected-operate-group {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 1rem;
-    }
+    border-top: 1px solid var(--line);
+    border-left: 0;
   }
 
-  .dialog-canvas {
-    width: 100%;
-    height: 100%;
-    display: flex;
+  .operate-note {
+    margin-top: 10px;
+  }
+}
+
+@media (max-width: 560px) {
+  .pdf-workspace {
+    border-radius: 22px;
+  }
+
+  #pdf-view {
+    min-height: 420px;
     justify-content: center;
-    align-items: center;
+    padding: 20px;
+  }
+
+  #operate {
+    padding: 24px 18px;
   }
 }
 </style>
