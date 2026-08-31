@@ -1398,6 +1398,7 @@ async function confirmScene() {
   .image-cell {
     min-width: 0;
     overflow: hidden;
+    border-radius: 0;
     background: #10231e;
 
     .image-toolbox {
