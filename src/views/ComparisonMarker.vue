@@ -92,6 +92,16 @@ function removeScene(i: number) {
   scenes.splice(i, 1)
 }
 
+function moveUpScene(sceneIdx: number) {
+  if (sceneIdx <= 0) return
+  [scenes[sceneIdx - 1], scenes[sceneIdx]] = [scenes[sceneIdx], scenes[sceneIdx - 1]]
+}
+
+function moveDownScene(sceneIdx: number) {
+  if (sceneIdx >= scenes.length - 1) return
+  [scenes[sceneIdx], scenes[sceneIdx + 1]] = [scenes[sceneIdx + 1], scenes[sceneIdx]]
+}
+
 function moveLeftImage(sceneIdx: number, imgIdx: number) {
   if (imgIdx <= 0) return
   const row = scenes[sceneIdx]
@@ -804,7 +814,21 @@ async function confirmScene() {
             <input v-if="!row.baseW && !row.baseH" type="file" accept="image/*" :multiple="true"
                    @change="(e) => handleUpload(e, rIdx)"/>
             <div v-if="!row.baseW && !row.baseH" class="hint">一次选择 {{ methodCount }} 张图片（同尺寸）。</div>
-            <button class="btn danger" @click="removeScene(rIdx)">删除该行</button>
+            <div class="scene-actions">
+              <button
+                  class="btn"
+                  :disabled="rIdx === 0"
+                  title="将该场景上移一行"
+                  @click="moveUpScene(rIdx)"
+              >↑ 上移</button>
+              <button
+                  class="btn"
+                  :disabled="rIdx === scenes.length - 1"
+                  title="将该场景下移一行"
+                  @click="moveDownScene(rIdx)"
+              >↓ 下移</button>
+              <button class="btn danger" @click="removeScene(rIdx)">删除该行</button>
+            </div>
           </div>
         </div>
 
@@ -1369,6 +1393,17 @@ async function confirmScene() {
           color: var(--muted);
           font-size: 0.67rem;
           opacity: 1;
+        }
+
+        .scene-actions {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-left: auto;
+
+          .danger {
+            margin-left: 0;
+          }
         }
       }
     }
