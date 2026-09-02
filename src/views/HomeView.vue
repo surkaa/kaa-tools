@@ -17,6 +17,17 @@ const tools = [
         <span class="eyebrow">KAA TOOLS</span>
         <h1>工具箱</h1>
         <p>一些常用的小工具。</p>
+        <a
+            class="github-link"
+            href="https://github.com/surkaa/kaa-tools"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="在 GitHub 上查看 surkaa/kaa-tools 仓库"
+        >
+          <span class="github-mark" aria-hidden="true">GH</span>
+          <span>surkaa/kaa-tools</span>
+          <span class="external-arrow" aria-hidden="true">↗</span>
+        </a>
       </div>
       <div class="tool-count">
         <strong>{{ tools.length }}</strong>
@@ -90,6 +101,46 @@ h1 {
   margin: 0;
   color: rgba(225, 243, 237, 0.62);
   font-size: 0.94rem;
+}
+
+.github-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 22px;
+  padding: 8px 11px 8px 8px;
+  border: 1px solid rgba(126, 229, 195, 0.17);
+  border-radius: 11px;
+  color: rgba(239, 253, 248, 0.82);
+  background: rgba(95, 226, 183, 0.07);
+  font-size: 0.73rem;
+  font-weight: 650;
+  text-decoration: none;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    border-color: rgba(126, 229, 195, 0.36);
+    color: #fff;
+    background: rgba(95, 226, 183, 0.13);
+  }
+}
+
+.github-mark {
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  color: #0d3027;
+  background: #72dfbb;
+  font-size: 0.54rem;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+}
+
+.external-arrow {
+  color: #72dfbb;
+  font-size: 0.72rem;
 }
 
 .tool-count {
