@@ -26,4 +26,8 @@
     <loc>https://tools.ywn.asia/img-box-selector</loc>
     <changefreq>monthly</changefreq>
   </url>
+  <url>
+    <loc>https://tools.ywn.asia/markdown-to-pdf</loc>
+    <changefreq>monthly</changefreq>
+  </url>
 </urlset>

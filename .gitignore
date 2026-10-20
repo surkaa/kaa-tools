@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# 本地包缓存与临时校验目录
+.pnpm-store
+.tmp-*
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

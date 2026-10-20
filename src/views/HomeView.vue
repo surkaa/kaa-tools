@@ -7,6 +7,7 @@ const tools = [
   {to: '/comparison-marker', index: '05', title: '对比标记', description: '制作适合展示的多图对比结果', accent: 'rose'},
   {to: '/image-compare', index: '06', title: '图片对比', description: '并排查看并高亮像素差异', accent: 'cyan'},
   {to: '/references-tools', index: '07', title: '参考文献工具', description: '将 BibTeX 转为规范引用格式', accent: 'lime'},
+  {to: '/markdown-to-pdf', index: '08', title: 'Markdown 转 PDF', description: '预览并导出 A4 PDF 文档', accent: 'blue'},
 ];
 </script>
 

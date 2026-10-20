@@ -90,6 +90,14 @@ const routes: RouteRecordRaw[] = [
         meta: {
             title: '参考文献工具'
         }
+    },
+    {
+        name: 'markdown-to-pdf',
+        path: '/markdown-to-pdf',
+        component: () => import('../views/MarkdownToPdf.vue'),
+        meta: {
+            title: 'Markdown 转 PDF'
+        }
     }
 ]
 
