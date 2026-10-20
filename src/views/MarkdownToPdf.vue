@@ -71,11 +71,8 @@ const exportProgress = ref(0);
 const renderError = ref('');
 const mermaidCount = ref(0);
 
+// 仅保留可调项：正文字号（纸张、方向、页边距、清晰度、文件名均使用固定默认值）
 const settings = ref({
-  pageSize: 'a4' as 'a4' | 'letter',
-  orientation: 'portrait' as 'portrait' | 'landscape',
-  margin: 14,
-  scale: 2,
   fontSize: 13,
 });
 
@@ -210,10 +207,6 @@ async function downloadPdf() {
 
   try {
     await exportElementToPdf(element, {
-      pageSize: settings.value.pageSize,
-      orientation: settings.value.orientation,
-      margin: settings.value.margin,
-      scale: settings.value.scale,
       title: fileName.value || 'markdown',
       onProgress: (progress) => {
         exportProgress.value = progress;
@@ -264,10 +257,26 @@ async function downloadPdf() {
           <strong>上传 Markdown 文件</strong>
           <p>将 .md、.markdown 或 .txt 文件拖到此处，或点击选择文件</p>
           <small>支持 .md、.markdown、.txt 文件，最大 2 MB</small>
+          <div class="dropzone-meta">
+            <span>当前文本：{{ charCount }} 个字符</span>
+            <span>{{ lineCount }} 行 · {{ sizeLabel }}</span>
+          </div>
         </div>
-        <div class="dropzone-meta">
-          <span>当前文本：{{ charCount }} 个字符</span>
-          <span>{{ lineCount }} 行 · {{ sizeLabel }}</span>
+
+        <div class="dropzone-controls">
+          <label class="font-field">
+            <span>正文字号：{{ settings.fontSize }} px</span>
+            <input v-model.number="settings.fontSize" type="range" min="10" max="18" step="1"/>
+          </label>
+          <button
+              type="button"
+              class="download-button"
+              :disabled="isExporting || !markdown.trim()"
+              @click.stop="downloadPdf"
+          >
+            {{ isExporting ? '生成中…' : '下载 PDF' }}
+            <i aria-hidden="true">↓</i>
+          </button>
         </div>
       </div>
       <input
@@ -322,7 +331,7 @@ async function downloadPdf() {
               </p>
             </div>
           </div>
-          <span class="format-chip">A4 · {{ settings.orientation === 'portrait' ? '纵向' : '横向' }}</span>
+          <span class="format-chip">A4 · 纵向</span>
         </div>
 
         <div class="paper-scroll">
@@ -341,77 +350,6 @@ async function downloadPdf() {
         </div>
       </section>
     </main>
-
-    <section class="settings-panel surface-card">
-      <div class="panel-title">
-        <span class="panel-number">03</span>
-        <div>
-          <h2>文档设置</h2>
-          <p>调整纸张与字号以获得更好的排版效果</p>
-        </div>
-      </div>
-
-      <div class="settings-grid">
-        <label class="field">
-          <span>纸张尺寸</span>
-          <select v-model="settings.pageSize">
-            <option value="a4">A4（210 × 297 mm）</option>
-            <option value="letter">Letter（216 × 279 mm）</option>
-          </select>
-        </label>
-
-        <label class="field">
-          <span>页面方向</span>
-          <select v-model="settings.orientation">
-            <option value="portrait">纵向</option>
-            <option value="landscape">横向</option>
-          </select>
-        </label>
-
-        <label class="field">
-          <span>页边距：{{ settings.margin }} mm</span>
-          <input v-model.number="settings.margin" type="range" min="0" max="30" step="1"/>
-        </label>
-
-        <label class="field">
-          <span>正文字号：{{ settings.fontSize }} px</span>
-          <input v-model.number="settings.fontSize" type="range" min="10" max="18" step="1"/>
-        </label>
-
-        <label class="field">
-          <span>渲染清晰度：{{ settings.scale }}x</span>
-          <input v-model.number="settings.scale" type="range" min="1" max="3" step="0.5"/>
-        </label>
-
-        <label class="field">
-          <span>文件名</span>
-          <input v-model="fileName" type="text" placeholder="markdown" maxlength="60"/>
-        </label>
-      </div>
-
-      <div class="export-row">
-        <div class="export-hint">
-          <template v-if="isExporting">
-            正在生成 PDF… {{ Math.round(exportProgress * 100) }}%
-          </template>
-          <template v-else-if="markdown.trim()">
-            将导出 {{ lineCount }} 行内容到 {{ settings.pageSize.toUpperCase() }} 文档
-          </template>
-          <template v-else>
-            请输入或上传 Markdown 内容后即可下载
-          </template>
-        </div>
-        <button
-            type="button"
-            class="download-button"
-            :disabled="isExporting || !markdown.trim()"
-            @click="downloadPdf"
-        >
-          {{ isExporting ? '生成中…' : '下载 PDF' }}
-          <i aria-hidden="true">↓</i>
-        </button>
-      </div>
-    </section>
   </div>
 </template>
 
@@ -438,7 +376,8 @@ async function downloadPdf() {
 
 .dropzone {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  /* 图标 | 上传说明 | 字号调节与下载按钮 */
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 18px;
   padding: 20px 22px;
@@ -507,12 +446,12 @@ async function downloadPdf() {
 }
 
 .dropzone-meta {
-  display: grid;
-  gap: 4px;
-  justify-items: end;
-  color: var(--muted);
-  font-size: 0.7rem;
-  white-space: nowrap;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 8px;
+  color: #93a19c;
+  font-size: 0.68rem;
 }
 
 .file-input {
@@ -909,70 +848,34 @@ textarea {
   margin-top: 4px;
 }
 
-.settings-panel {
+/* 与「上传 Markdown 文件」同排：字号调节 + 下载按钮 */
+.dropzone-controls {
+  display: grid;
+  gap: 8px;
+  justify-items: stretch;
+  align-self: center;
+  width: 240px;
+  flex: 0 0 auto;
+}
+
+.font-field {
+  display: grid;
+  gap: 4px;
   width: 100%;
-  margin: 0 0 18px;
-  padding: clamp(18px, 2.6vw, 26px);
-}
-
-.settings-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px 18px;
-  margin: 18px 0 20px;
-}
-
-.field {
-  display: grid;
-  gap: 7px;
-  min-width: 0;
 
   > span {
-    color: #40504c;
-    font-size: 0.72rem;
+    color: var(--muted);
+    font-size: 0.68rem;
     font-weight: 620;
-  }
-
-  select,
-  input[type='text'] {
-    width: 100%;
-    min-height: 38px;
-    padding: 0 11px;
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    outline: none;
-    color: #263d37;
-    background: #f8fbfa;
-    font-size: 0.76rem;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-
-    &:focus {
-      border-color: var(--accent);
-      background: #fff;
-      box-shadow: 0 0 0 4px rgba(17, 168, 121, 0.1);
-    }
+    white-space: nowrap;
   }
 
   input[type='range'] {
     width: 100%;
-    height: 22px;
+    height: 20px;
     accent-color: var(--accent);
     cursor: pointer;
   }
-}
-
-.export-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding-top: 18px;
-  border-top: 1px solid var(--line);
-}
-
-.export-hint {
-  color: var(--muted);
-  font-size: 0.72rem;
 }
 
 .download-button {
@@ -1009,10 +912,6 @@ textarea {
     grid-template-columns: 1fr;
   }
 
-  .settings-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   textarea {
     min-height: 340px;
   }
@@ -1030,9 +929,14 @@ textarea {
     padding: 16px;
   }
 
-  .dropzone-meta {
+  .dropzone-controls {
     grid-column: 1 / -1;
-    justify-items: start;
+    width: 100%;
+    justify-items: stretch;
+  }
+
+  .download-button {
+    width: 100%;
   }
 
   .panel-header {
@@ -1042,19 +946,6 @@ textarea {
 
   .panel-actions {
     justify-content: flex-start;
-  }
-
-  .settings-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .export-row {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .download-button {
-    width: 100%;
   }
 }
 </style>
