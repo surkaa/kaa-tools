@@ -70,6 +70,8 @@ const isExporting = ref(false);
 const exportProgress = ref(0);
 const renderError = ref('');
 const mermaidCount = ref(0);
+/** 上次编辑内容是否有缓存（用于按钮禁用态与初始探测） */
+const hasCache = ref(false);
 
 // 仅保留可调项：正文字号（纸张、方向、页边距、清晰度、文件名均使用固定默认值）
 const settings = ref({
@@ -84,6 +86,58 @@ const sizeLabel = computed(() => formatBytes(byteSize.value));
 const isOversize = computed(() => byteSize.value > MAX_FILE_SIZE);
 
 const sampleLines = SAMPLE_MARKDOWN.split('\n').length;
+
+/** 本地缓存：只保存一份 Markdown 内容 */
+const CACHE_KEY = 'kaa-tools.markdown-to-pdf.content';
+
+interface CachedDraft {
+  markdown: string;
+  fileName: string;
+}
+
+function readCache(): CachedDraft | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<CachedDraft>;
+    if (typeof parsed?.markdown !== 'string' || !parsed.markdown.trim()) return null;
+    return {
+      markdown: parsed.markdown,
+      fileName: typeof parsed.fileName === 'string' && parsed.fileName ? parsed.fileName : 'markdown',
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeCache() {
+  try {
+    if (!markdown.value.trim()) {
+      localStorage.removeItem(CACHE_KEY);
+      hasCache.value = false;
+      return;
+    }
+    const draft: CachedDraft = {markdown: markdown.value, fileName: fileName.value};
+    localStorage.setItem(CACHE_KEY, JSON.stringify(draft));
+    hasCache.value = true;
+  } catch {
+    // 隐私模式或超出配额时静默降级，不影响主要功能
+    hasCache.value = false;
+  }
+}
+
+function loadCache() {
+  const draft = readCache();
+  if (!draft) {
+    hasCache.value = false;
+    ElMessage.warning('没有可恢复的缓存内容');
+    return;
+  }
+  markdown.value = draft.markdown;
+  fileName.value = draft.fileName;
+  renderError.value = '';
+  ElMessage.success('已恢复上次编辑的内容');
+}
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -110,11 +164,23 @@ watch(renderedHtml, () => {
   refreshPreview();
 }, {immediate: true});
 
+// 编辑后自动写入缓存（防抖，避免每次按键都写 localStorage）
+let cacheTimer: ReturnType<typeof setTimeout> | null = null;
+watch([markdown, fileName], () => {
+  if (cacheTimer) clearTimeout(cacheTimer);
+  cacheTimer = setTimeout(writeCache, 400);
+});
+
 onMounted(() => {
   refreshPreview();
+  hasCache.value = readCache() !== null;
 });
 
 onBeforeUnmount(() => {
+  if (cacheTimer) {
+    clearTimeout(cacheTimer);
+    writeCache();
+  }
   cleanupMermaidArtifacts();
 });
 
@@ -305,6 +371,7 @@ async function downloadPdf() {
             <button type="button" @click="loadSample">加载示例</button>
             <button type="button" @click="copyMarkdown">复制</button>
             <button type="button" @click="clearAll">清空</button>
+            <button type="button" :disabled="!hasCache" @click="loadCache">加载上次内容</button>
           </div>
         </div>
 
