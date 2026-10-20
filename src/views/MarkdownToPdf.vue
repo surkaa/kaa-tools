@@ -237,33 +237,36 @@ async function downloadPdf() {
     </header>
 
     <section class="upload-panel surface-card">
-      <div
-          class="dropzone"
-          :class="{ 'is-dragging': isDragging }"
-          role="button"
-          tabindex="0"
-          @click="fileInputRef?.click()"
-          @keydown.enter.prevent="fileInputRef?.click()"
-          @keydown.space.prevent="fileInputRef?.click()"
-          @dragover.prevent="onDragOver"
-          @dragenter.prevent="onDragOver"
-          @dragleave.prevent="onDragLeave"
-          @drop.prevent="onDrop"
-      >
-        <div class="dropzone-icon" aria-hidden="true">
-          <i></i><i></i><i></i>
-        </div>
-        <div class="dropzone-copy">
-          <strong>上传 Markdown 文件</strong>
-          <p>将 .md、.markdown 或 .txt 文件拖到此处，或点击选择文件</p>
-          <small>支持 .md、.markdown、.txt 文件，最大 2 MB</small>
-          <div class="dropzone-meta">
-            <span>当前文本：{{ charCount }} 个字符</span>
-            <span>{{ lineCount }} 行 · {{ sizeLabel }}</span>
+      <div class="upload-row">
+        <div
+            class="dropzone"
+            :class="{ 'is-dragging': isDragging }"
+            role="button"
+            tabindex="0"
+            @click="fileInputRef?.click()"
+            @keydown.enter.prevent="fileInputRef?.click()"
+            @keydown.space.prevent="fileInputRef?.click()"
+            @dragover.prevent="onDragOver"
+            @dragenter.prevent="onDragOver"
+            @dragleave.prevent="onDragLeave"
+            @drop.prevent="onDrop"
+        >
+          <div class="dropzone-icon" aria-hidden="true">
+            <i></i><i></i><i></i>
+          </div>
+          <div class="dropzone-copy">
+            <strong>上传 Markdown 文件</strong>
+            <p>将 .md、.markdown 或 .txt 文件拖到此处，或点击选择文件</p>
+            <small>支持 .md、.markdown、.txt 文件，最大 2 MB</small>
+            <div class="dropzone-meta">
+              <span>当前文本：{{ charCount }} 个字符</span>
+              <span>{{ lineCount }} 行 · {{ sizeLabel }}</span>
+            </div>
           </div>
         </div>
 
-        <div class="dropzone-controls">
+        <!-- 与上传区并排，不嵌套：避免拖拽/键盘事件误触发上传 -->
+        <div class="upload-controls">
           <label class="font-field">
             <span>正文字号：{{ settings.fontSize }} px</span>
             <input v-model.number="settings.fontSize" type="range" min="10" max="18" step="1"/>
@@ -272,7 +275,7 @@ async function downloadPdf() {
               type="button"
               class="download-button"
               :disabled="isExporting || !markdown.trim()"
-              @click.stop="downloadPdf"
+              @click="downloadPdf"
           >
             {{ isExporting ? '生成中…' : '下载 PDF' }}
             <i aria-hidden="true">↓</i>
@@ -374,10 +377,18 @@ async function downloadPdf() {
   padding: 16px;
 }
 
+/* 上传区与右侧控件并排，二者互为兄弟节点，事件互不干扰 */
+.upload-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+}
+
 .dropzone {
   display: grid;
-  /* 图标 | 上传说明 | 字号调节与下载按钮 */
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  /* 图标 | 上传说明 */
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 18px;
   padding: 20px 22px;
@@ -849,11 +860,9 @@ textarea {
 }
 
 /* 与「上传 Markdown 文件」同排：字号调节 + 下载按钮 */
-.dropzone-controls {
+.upload-controls {
   display: grid;
   gap: 8px;
-  justify-items: stretch;
-  align-self: center;
   width: 240px;
   flex: 0 0 auto;
 }
@@ -923,16 +932,18 @@ textarea {
 }
 
 @media (max-width: 720px) {
+  .upload-row {
+    grid-template-columns: 1fr;
+  }
+
   .dropzone {
     grid-template-columns: auto 1fr;
     gap: 14px;
     padding: 16px;
   }
 
-  .dropzone-controls {
-    grid-column: 1 / -1;
+  .upload-controls {
     width: 100%;
-    justify-items: stretch;
   }
 
   .download-button {
