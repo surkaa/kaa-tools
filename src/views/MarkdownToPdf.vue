@@ -412,21 +412,6 @@ async function downloadPdf() {
         </button>
       </div>
     </section>
-
-    <section class="notes">
-      <article class="note-card surface-card">
-        <h3>版式说明</h3>
-        <p>工具先在浏览器内把 Markdown 渲染为 HTML，再生成 A4 PDF，保留标题层级、列表、代码块、表格与引用，并按页面长度自动分页。分页位置由内容高度决定，较长的代码块或图表可能被拆分到两页，连续滚动预览与实际分页不完全一致。</p>
-      </article>
-      <article class="note-card surface-card">
-        <h3>图片处理</h3>
-        <p>Markdown 中引用的图片需使用完整且公开可访问的网址，本地路径与相对路径无法加载；宽表格建议精简内容或调小字号。</p>
-      </article>
-      <article class="note-card surface-card">
-        <h3>隐私安全</h3>
-        <p>全部转换在本地浏览器完成，Markdown 内容不会发送到服务器，也不会被保存，刷新页面即清空。</p>
-      </article>
-    </section>
   </div>
 </template>
 
@@ -435,9 +420,19 @@ async function downloadPdf() {
   width: 100%;
 }
 
+/* 页面内容占满可用宽度，与下方各面板左右对齐 */
+.tool-header {
+  width: 100%;
+  margin-inline: 0;
+}
+
+.tool-description {
+  max-width: 900px;
+}
+
 .upload-panel {
-  width: min(100%, 1180px);
-  margin: 0 auto 18px;
+  width: 100%;
+  margin: 0 0 18px;
   padding: 16px;
 }
 
@@ -525,11 +520,11 @@ async function downloadPdf() {
 }
 
 .workspace {
-  width: min(100%, 1180px);
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
-  margin: 0 auto 18px;
+  margin: 0 0 18px;
 }
 
 .editor-panel,
@@ -915,8 +910,8 @@ textarea {
 }
 
 .settings-panel {
-  width: min(100%, 1180px);
-  margin: 0 auto 18px;
+  width: 100%;
+  margin: 0 0 18px;
   padding: clamp(18px, 2.6vw, 26px);
 }
 
@@ -1009,32 +1004,6 @@ textarea {
   }
 }
 
-.notes {
-  width: min(100%, 1180px);
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  margin: 0 auto;
-}
-
-.note-card {
-  padding: 20px 22px;
-
-  h3 {
-    margin: 0 0 8px;
-    color: var(--ink);
-    font-size: 0.88rem;
-    letter-spacing: -0.02em;
-  }
-
-  p {
-    margin: 0;
-    color: var(--muted);
-    font-size: 0.74rem;
-    line-height: 1.7;
-  }
-}
-
 @media (max-width: 1040px) {
   .workspace {
     grid-template-columns: 1fr;
@@ -1042,10 +1011,6 @@ textarea {
 
   .settings-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .notes {
-    grid-template-columns: 1fr;
   }
 
   textarea {
