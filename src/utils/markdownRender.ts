@@ -35,7 +35,8 @@ function escapeHtml(value: string): string {
 
 /**
  * 保护公式不被 Markdown 解析破坏：
- * 先把 $$...$$ 与 $...$ 抽出为占位符，Markdown 解析完成后再回填渲染结果。
+ * 支持 $$...$$、\[...\]（块级）与 $...$、\(...\)（行内）四种写法。
+ * 先把公式抽出为占位符，Markdown 解析完成后再回填渲染结果。
  */
 interface MathSlot {
   token: string;
@@ -44,7 +45,16 @@ interface MathSlot {
 
 function extractMath(source: string): { text: string; slots: MathSlot[] } {
   const slots: MathSlot[] = [];
+  const codeSlots: string[] = [];
   let text = source;
+
+  // 先摘出代码块与行内代码，避免其中的 $、\( 等被误判为公式
+  const stashCode = (code: string) => {
+    codeSlots.push(code);
+    return `@@MDCODE${codeSlots.length - 1}@@`;
+  };
+  text = text.replace(/```[\s\S]*?```|~~~[\s\S]*?~~~/g, stashCode);
+  text = text.replace(/`[^`\n]+`/g, stashCode);
 
   const stash = (html: string) => {
     const token = `@@MDMATH${slots.length}@@`;
@@ -52,14 +62,25 @@ function extractMath(source: string): { text: string; slots: MathSlot[] } {
     return token;
   };
 
-  // 先处理块级公式，避免行内规则误吃 $$ 的内部内容
+  // 块级公式：$$...$$ 与 \[...\]，输出独立段落
   text = text.replace(/\$\$([\s\S]+?)\$\$/g, (_match, tex: string) => {
     return `\n\n${stash(renderMath(tex.trim(), true))}\n\n`;
   });
+  text = text.replace(/\\\[([\s\S]+?)\\\]/g, (_match, tex: string) => {
+    return `\n\n${stash(renderMath(tex.trim(), true))}\n\n`;
+  });
 
-  // 行内公式：要求 $ 前后不是空白，且不跨行，降低对普通 $ 符号的误判
+  // 行内公式：\(...\)，不允许跨空行，避免误吞大段正文
+  text = text.replace(/\\\(((?:(?!\n[ \t]*\n)[\s\S])+?)\\\)/g, (_match, tex: string) => {
+    return stash(renderMath(tex.trim(), false));
+  });
+
+  // 行内公式：$...$，要求 $ 前后不是空白，且不跨行，降低对普通 $ 符号的误判
   text = text.replace(/(^|[^\\$])\$(?!\s)([^\n$]+?)(?<!\s)\$(?!\$)/g,
       (_match, prefix: string, tex: string) => `${prefix}${stash(renderMath(tex, false))}`);
+
+  // 代码片段还原，交回 marked 正常解析
+  text = text.replace(/@@MDCODE(\d+)@@/g, (_match, index: string) => codeSlots[Number(index)]);
 
   return {text, slots};
 }
