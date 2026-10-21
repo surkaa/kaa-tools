@@ -449,8 +449,8 @@ async function downloadPdf() {
 <style scoped lang="scss">
 #markdown-to-pdf {
   width: 100%;
-  /* 固定为滚动容器高度，使 workspace 占据顶栏之外的剩余空间；
-     内容过高时由内部编辑区/预览区各自滚动，而不是整页滚动 */
+  /* 撑满外层滚动容器，workspace 占据顶栏之外的剩余高度；
+     面板内部各自滚动，页面本身不滚动 */
   height: 100%;
   box-sizing: border-box;
   display: flex;
@@ -458,13 +458,14 @@ async function downloadPdf() {
   overflow: hidden;
 }
 
-/* 顶部两栏：标题区按文字宽度自适应，上传面板占满剩余空间 */
+/* 顶栏高度由内容决定，不参与剩余空间分配 */
 .top-row {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 28px;
   margin-bottom: 18px;
+  flex: 0 0 auto;
 }
 
 .tool-header {
@@ -579,17 +580,21 @@ async function downloadPdf() {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
   margin: 0 0 18px;
-  /* 占据顶栏之后的剩余高度 */
+  /* 占据顶栏之后的剩余高度；min-height:0 是关键，
+     否则 grid 子项默认 min-height:auto 会被内容撑高而不滚动 */
   flex: 1 1 auto;
   min-height: 0;
 }
 
+/* 两个面板等高，内部内容超出时各自滚动 */
 .editor-panel,
 .preview-panel {
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   padding: clamp(18px, 2.6vw, 26px);
+  overflow: hidden;
 }
 
 .panel-header {
@@ -598,6 +603,8 @@ async function downloadPdf() {
   justify-content: space-between;
   gap: 14px;
   margin-bottom: 16px;
+  /* 头部固定高度，剩余空间全部让给编辑区/预览区 */
+  flex: 0 0 auto;
 }
 
 .panel-title {
@@ -691,10 +698,12 @@ button {
 
 textarea {
   width: 100%;
-  min-height: 320px;
+  /* 高度由面板剩余空间决定，超出时自身滚动 */
+  min-height: 0;
   flex: 1 1 auto;
   padding: 18px;
-  resize: vertical;
+  resize: none;
+  overflow: auto;
   border: 1px solid var(--line);
   border-radius: 15px;
   outline: none;
@@ -732,11 +741,12 @@ textarea {
 }
 
 .paper-scroll {
-  /* 高度由父级剩余空间决定，不再固定，避免出现双重滚动 */
-  min-height: 320px;
+  /* 高度由面板剩余空间决定，长文档在内部滚动 */
+  min-height: 0;
   flex: 1 1 auto;
   padding: 8px;
   overflow: auto;
+  overscroll-behavior: contain;
   border: 1px solid var(--line);
   border-radius: 15px;
   background: #eef3f1;
@@ -938,8 +948,8 @@ textarea {
 }
 
 .preview-empty {
-  min-height: 320px;
-  height: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
   display: grid;
   place-items: center;
   align-content: center;
@@ -1050,18 +1060,37 @@ textarea {
   }
 }
 
+/* 窄屏时面板上下堆叠，无法共享视口高度：恢复为页面整体滚动 */
 @media (max-width: 1040px) {
+  #markdown-to-pdf {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+
   .workspace {
     grid-template-columns: 1fr;
+    flex: 0 0 auto;
+  }
+
+  .editor-panel,
+  .preview-panel {
+    overflow: visible;
   }
 
   textarea {
     min-height: 340px;
+    /* 窄屏下限制高度，长文本在框内滚动而不是无限拉长页面 */
+    max-height: 60vh;
+    resize: vertical;
+    overflow: auto;
   }
 
   .preview-empty,
   .paper-scroll {
     min-height: 420px;
+    max-height: 60vh;
+    overflow: auto;
   }
 }
 
