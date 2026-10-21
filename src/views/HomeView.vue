@@ -196,18 +196,18 @@ h1 {
   border: 1px solid var(--line);
   border-radius: 20px;
   color: var(--ink);
-  background: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 10px 30px rgba(26, 62, 53, 0.05);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
   text-decoration: none;
   transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
 
   &:hover {
     border-color: color-mix(in srgb, var(--card-accent) 32%, transparent);
-    box-shadow: 0 18px 44px rgba(26, 62, 53, 0.1);
+    box-shadow: var(--shadow-lg);
     transform: translateY(-4px);
 
     .tool-arrow {
-      color: #fff;
+      color: var(--on-accent);
       background: var(--card-accent);
     }
   }
@@ -252,8 +252,8 @@ h1 {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  color: #7a8985;
-  background: #edf3f0;
+  color: var(--muted-soft);
+  background: var(--surface-soft);
   font-size: 0.78rem;
   transition: color 0.2s ease, background 0.2s ease;
 }

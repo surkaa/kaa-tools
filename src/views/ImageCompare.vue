@@ -282,7 +282,7 @@ async function doHighlight() {
       display: grid;
       place-items: center;
       border-radius: 11px;
-      color: #fff;
+      color: var(--on-accent);
       background: var(--accent);
       box-shadow: 0 8px 20px rgba(17, 168, 121, 0.2);
       font-size: 1.15rem;
@@ -294,7 +294,7 @@ async function doHighlight() {
     }
 
     strong {
-      color: #263d37;
+      color: var(--ink);
       font-size: 0.78rem;
     }
 
@@ -319,8 +319,8 @@ async function doHighlight() {
     padding: 0 14px;
     border: 1px solid var(--line);
     border-radius: 10px;
-    color: #52625d;
-    background: #f6faf8;
+    color: var(--muted);
+    background: var(--field);
     cursor: pointer;
     font-size: 0.72rem;
     font-weight: 650;
@@ -364,7 +364,7 @@ async function doHighlight() {
   display: flex;
   gap: 14px;
   margin-left: auto;
-  color: #82908c;
+  color: var(--muted-soft);
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   font-size: 0.62rem;
 
@@ -382,7 +382,7 @@ async function doHighlight() {
   background:
       linear-gradient(45deg, rgba(24, 62, 52, 0.025) 25%, transparent 25%, transparent 75%, rgba(24, 62, 52, 0.025) 75%),
       linear-gradient(45deg, rgba(24, 62, 52, 0.025) 25%, transparent 25%, transparent 75%, rgba(24, 62, 52, 0.025) 75%),
-      rgba(255, 255, 255, 0.82);
+      var(--surface);
   background-position: 0 0, 10px 10px;
   background-size: 20px 20px;
 }
@@ -398,7 +398,7 @@ async function doHighlight() {
 
   h2 {
     margin: 20px 0 7px;
-    color: #304741;
+    color: var(--ink);
     font-size: 1rem;
   }
 
@@ -422,7 +422,7 @@ async function doHighlight() {
     height: 48px;
     border: 1px solid rgba(17, 168, 121, 0.22);
     border-radius: 13px;
-    background: rgba(226, 247, 240, 0.78);
+    background: var(--accent-soft);
 
     &:first-child { left: 0; transform: rotate(-8deg); }
     &:last-child { right: 0; transform: rotate(8deg); }

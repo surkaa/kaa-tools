@@ -234,7 +234,7 @@ function exportCSV() {
 .format-chip {
   padding: 6px 9px;
   border-radius: 8px;
-  color: #7e8d88;
+  color: var(--muted-soft);
   background: var(--surface-soft);
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   font-size: 0.62rem;
@@ -250,20 +250,20 @@ textarea {
   border: 1px solid var(--line);
   border-radius: 15px;
   outline: none;
-  color: #263d37;
-  background: #f7faf9;
+  color: var(--ink);
+  background: var(--field);
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   font-size: 0.78rem;
   line-height: 1.7;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 
   &::placeholder {
-    color: #a8b3af;
+    color: var(--muted-soft);
   }
 
   &:focus {
     border-color: var(--accent);
-    background: #fff;
+    background: var(--field-hover);
     box-shadow: 0 0 0 4px rgba(17, 168, 121, 0.1);
   }
 }
@@ -286,8 +286,8 @@ button {
   padding: 0 15px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  color: #334943;
-  background: #f6faf8;
+  color: var(--ink-soft);
+  background: var(--field);
   cursor: pointer;
   font-size: 0.72rem;
   font-weight: 650;
@@ -344,7 +344,7 @@ pre {
   border: 1px dashed var(--line-strong);
   border-radius: 15px;
   color: var(--muted);
-  background: #fafcfb;
+  background: var(--field);
 
   p {
     margin: 14px 0 0;

@@ -1190,8 +1190,8 @@ async function confirmScene() {
     border: 1px solid var(--line);
     border-radius: 9px;
     outline: none;
-    color: #30463f;
-    background: #f7faf9;
+    color: var(--ink);
+    background: var(--field);
     font-size: 0.72rem;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
@@ -1210,8 +1210,8 @@ async function confirmScene() {
     overflow-x: auto;
     border: 1px solid var(--line);
     border-radius: 14px;
-    color: #667570;
-    background: #f8fbfa;
+    color: var(--muted);
+    background: var(--field);
     font-size: 0.67rem;
     white-space: nowrap;
   }
@@ -1224,8 +1224,8 @@ async function confirmScene() {
     padding: 0 13px;
     border: 1px solid var(--line);
     border-radius: 10px;
-    color: #3d514b;
-    background: #f7faf9;
+    color: var(--ink-soft);
+    background: var(--field);
     cursor: pointer;
     font-size: 0.7rem;
     font-weight: 650;
@@ -1233,21 +1233,21 @@ async function confirmScene() {
 
     &:hover:not(:disabled) {
       border-color: rgba(17, 168, 121, 0.35);
-      background: #eef8f4;
+      background: var(--surface-soft);
       transform: translateY(-1px);
     }
 
     &.primary {
       border-color: var(--accent);
-      color: #fff;
+      color: var(--on-accent);
       background: var(--accent);
       box-shadow: 0 8px 20px rgba(17, 168, 121, 0.18);
     }
 
     &.danger {
-      border-color: rgba(210, 82, 82, 0.18);
-      color: #ac4747;
-      background: #fff4f4;
+      border-color: var(--danger-line);
+      color: var(--danger);
+      background: var(--danger-soft);
     }
 
     &:disabled {
@@ -1284,11 +1284,11 @@ async function confirmScene() {
       overflow-x: auto;
       border: 1px solid var(--line);
       border-radius: 12px;
-      background: #f7faf9;
+      background: var(--field);
 
       p {
         margin: 0;
-        color: #40534d;
+        color: var(--muted);
         font-size: 0.67rem;
         white-space: nowrap;
       }
@@ -1305,8 +1305,8 @@ async function confirmScene() {
           padding: 4px 7px;
           overflow: hidden;
           border-radius: 6px;
-          color: #697873;
-          background: #eaf1ee;
+          color: var(--muted);
+          background: var(--surface-soft);
           font-size: 0.6rem;
           text-overflow: ellipsis;
           white-space: nowrap;
@@ -1342,19 +1342,19 @@ async function confirmScene() {
   padding: 10px;
   border: 1px solid var(--line);
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--surface);
   box-shadow: var(--shadow-sm);
 
   .cell {
     position: relative;
     overflow: hidden;
     border-radius: 14px;
-    background: #eef3f1;
+    background: var(--surface-soft);
 
     &.header {
       grid-column: 1 / -1;
       padding: 14px;
-      background: #f3f7f5;
+      background: var(--panel-muted);
 
       .upload {
         display: flex;
@@ -1372,8 +1372,8 @@ async function confirmScene() {
             border: 1px solid var(--line);
             border-radius: 10px;
             outline: none;
-            color: #29423a;
-            background: #fff;
+            color: var(--ink);
+            background: var(--field);
             font-size: 0.9rem;
             font-weight: 700;
           }
@@ -1384,8 +1384,8 @@ async function confirmScene() {
           padding: 7px;
           border: 1px dashed rgba(17, 168, 121, 0.3);
           border-radius: 9px;
-          color: #64736f;
-          background: #ecf7f3;
+          color: var(--muted);
+          background: var(--surface-soft);
           font-size: 0.65rem;
         }
 
@@ -1414,17 +1414,17 @@ async function confirmScene() {
     padding: 0 11px;
     border: 1px solid var(--line);
     border-radius: 9px;
-    color: #3e524c;
-    background: #fff;
+    color: var(--ink-soft);
+    background: var(--field);
     cursor: pointer;
     font-size: 0.66rem;
     font-weight: 650;
 
     &.danger {
       margin-left: auto;
-      border-color: rgba(210, 82, 82, 0.18);
-      color: #ad4c4c;
-      background: #fff4f4;
+      border-color: var(--danger-line);
+      color: var(--danger);
+      background: var(--danger-soft);
     }
 
     &:disabled { opacity: 0.36; cursor: not-allowed; }
@@ -1524,8 +1524,8 @@ async function confirmScene() {
   padding: 20px 22px;
   border: 1px solid var(--line);
   border-radius: 18px;
-  color: #65746f;
-  background: rgba(255, 255, 255, 0.64);
+  color: var(--muted);
+  background: var(--surface);
   font-size: 0.7rem;
   line-height: 1.6;
   opacity: 1;

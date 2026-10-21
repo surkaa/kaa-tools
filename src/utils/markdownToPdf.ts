@@ -18,6 +18,8 @@ export interface PdfExportOptions {
   scale?: number;
   /** 文档标题，用于 PDF 元数据与文件名 */
   title?: string;
+  /** 导出底色，需与元素纸面一致（暗色主题导出深色纸面），默认白色 */
+  backgroundColor?: string;
   /** 进度回调，0 - 1 */
   onProgress?: (progress: number) => void;
 }
@@ -30,6 +32,45 @@ const PAGE_SIZES: Record<'a4' | 'letter', { width: number; height: number }> = {
 /** 单页最大像素高度，避免超出 canvas 上限导致空白页 */
 const MAX_CANVAS_PIXELS = 16000;
 
+/** 将 CSS 颜色（#rgb / #rrggbb / rgb() / rgba()）解析成 RGB 三元组，失败返回 null */
+function parseCssColor(value: string): [number, number, number] | null {
+  const input = value.trim();
+  if (!input) {
+    return null;
+  }
+
+  const hex = input.match(/^#([0-9a-f]{3,8})$/i);
+  if (hex) {
+    const raw = hex[1];
+    if (raw.length === 3) {
+      return [
+        parseInt(raw[0] + raw[0], 16),
+        parseInt(raw[1] + raw[1], 16),
+        parseInt(raw[2] + raw[2], 16),
+      ];
+    }
+    if (raw.length >= 6) {
+      return [
+        parseInt(raw.slice(0, 2), 16),
+        parseInt(raw.slice(2, 4), 16),
+        parseInt(raw.slice(4, 6), 16),
+      ];
+    }
+    return null;
+  }
+
+  const rgb = input.match(/^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/i);
+  if (rgb) {
+    return [
+      Math.round(Number(rgb[1])),
+      Math.round(Number(rgb[2])),
+      Math.round(Number(rgb[3])),
+    ];
+  }
+
+  return null;
+}
+
 export async function exportElementToPdf(
     element: HTMLElement,
     options: PdfExportOptions = {},
@@ -40,8 +81,11 @@ export async function exportElementToPdf(
     margin = 14,
     scale = 2,
     title = 'document',
+    backgroundColor = '#ffffff',
     onProgress,
   } = options;
+
+  const pageColor = parseCssColor(backgroundColor);
 
   const size = PAGE_SIZES[pageSize] ?? PAGE_SIZES.a4;
   const pageWidth = orientation === 'landscape' ? size.height : size.width;
@@ -53,7 +97,7 @@ export async function exportElementToPdf(
     scale,
     useCORS: true,
     allowTaint: false,
-    backgroundColor: '#ffffff',
+    backgroundColor,
     logging: false,
     windowWidth: element.scrollWidth,
     windowHeight: element.scrollHeight,
@@ -108,7 +152,7 @@ export async function exportElementToPdf(
       const offset = chunk * MAX_CANVAS_PIXELS;
       const partHeight = Math.min(MAX_CANVAS_PIXELS, sliceHeight - offset);
 
-      sliceCtx.fillStyle = '#ffffff';
+      sliceCtx.fillStyle = backgroundColor;
       sliceCtx.fillRect(0, offset, sliceCanvas.width, partHeight);
       sliceCtx.drawImage(
           canvas,
@@ -122,6 +166,11 @@ export async function exportElementToPdf(
 
     if (page > 0) {
       pdf.addPage([pageWidth, pageHeight], orientation);
+    }
+    // 页边距也铺成纸张底色，暗色主题下不会出现白边
+    if (pageColor) {
+      pdf.setFillColor(pageColor[0], pageColor[1], pageColor[2]);
+      pdf.rect(0, 0, pageWidth, pageHeight, 'F');
     }
     pdf.addImage(sliceData, 'JPEG', margin, margin, contentWidthMm, sliceHeightMm, undefined, 'FAST');
 

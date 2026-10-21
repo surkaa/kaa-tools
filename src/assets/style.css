@@ -1,17 +1,39 @@
+/* 设计 token 说明：
+   - 亮色为默认值，暗色在 :root[data-theme='dark'] 中整体覆盖；
+   - 新增 --field / --panel-muted / --hairline 等语义色，供各页面替换硬编码浅色；
+   - --paper / --paper-backdrop / --code-* 是文档纸面色（Markdown 预览 / PDF 导出），
+     跟随主题变化，保证预览与导出结果一致。 */
 :root {
     font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
-    color: #172522;
-    background: #f3f7f5;
+    color-scheme: light;
+    color: var(--ink);
+    background: var(--bg);
     font-synthesis: none;
     text-rendering: optimizeLegibility;
+
+    /* 文字 */
     --ink: #172522;
+    --ink-soft: #40504c;
     --muted: #667570;
+    --muted-soft: #8b9a95;
+
+    /* 品牌色 */
     --accent: #11a879;
     --accent-strong: #08795b;
     --accent-soft: #e7f7f1;
+
+    /* 页面与表面 */
+    --bg: #f3f7f5;
+    --bg-glow-a: rgba(47, 201, 154, 0.1);
+    --bg-glow-b: rgba(50, 133, 255, 0.07);
     --surface: rgba(255, 255, 255, 0.92);
     --surface-solid: #ffffff;
     --surface-soft: #eef4f1;
+    --field: #f8fbfa;
+    --field-hover: #ffffff;
+    --panel-muted: #f7faf9;
+    --hairline: #e7efec;
+    --hairline-strong: #dfe9e5;
     --line: rgba(23, 37, 34, 0.1);
     --line-strong: rgba(23, 37, 34, 0.16);
     --shadow-sm: 0 10px 30px rgba(32, 67, 58, 0.08);
@@ -19,6 +41,30 @@
     --radius-sm: 12px;
     --radius-md: 18px;
     --radius-lg: 28px;
+
+    /* 状态色 */
+    --success: #0d8a63;
+    --success-soft: #e6f8f1;
+    --warning: #9b6d19;
+    --warning-soft: #fff5df;
+    --danger: #c0392b;
+    --danger-soft: #fdf0ee;
+    --danger-line: #f0d7d3;
+
+    /* 文档纸面（Markdown 预览 / PDF 导出）：随主题变化，导出与预览保持一致 */
+    --paper: #ffffff;
+    --paper-backdrop: #eef4f1;
+    --code-ink: #b4325a;
+    --code-bg: #f2f6f4;
+
+    /* 其他 */
+    --on-accent: #ffffff;
+    --scroll-thumb: rgba(64, 80, 76, 0.24);
+    --scroll-thumb-hover: rgba(64, 80, 76, 0.4);
+    --selection-ink: #073e30;
+    --selection-bg: rgba(40, 211, 156, 0.28);
+
+    /* Element Plus */
     --el-color-primary: #11a879;
     --el-color-primary-light-3: #4bc39b;
     --el-color-primary-light-5: #82d7bc;
@@ -30,6 +76,78 @@
     --el-fill-color-blank: #ffffff;
     --el-text-color-primary: #172522;
     --el-text-color-regular: #40504c;
+}
+
+:root[data-theme='dark'] {
+    color-scheme: dark;
+
+    --ink: #e8f2ee;
+    --ink-soft: #c3d4ce;
+    --muted: #93a7a0;
+    --muted-soft: #7b8f88;
+
+    --accent: #2fc795;
+    --accent-strong: #7fe3c2;
+    --accent-soft: rgba(47, 199, 149, 0.16);
+
+    --bg: #08110f;
+    --bg-glow-a: rgba(39, 189, 145, 0.16);
+    --bg-glow-b: rgba(76, 124, 235, 0.12);
+    --surface: rgba(19, 31, 27, 0.88);
+    --surface-solid: #131f1b;
+    --surface-soft: #192723;
+    --field: #16231f;
+    --field-hover: #1b2b26;
+    --panel-muted: #152320;
+    --hairline: rgba(232, 242, 238, 0.12);
+    --hairline-strong: rgba(232, 242, 238, 0.18);
+    --line: rgba(232, 242, 238, 0.1);
+    --line-strong: rgba(232, 242, 238, 0.18);
+    --shadow-sm: 0 10px 30px rgba(0, 0, 0, 0.32);
+    --shadow-lg: 0 24px 70px rgba(0, 0, 0, 0.46);
+
+    --success: #4fd9ab;
+    --success-soft: rgba(79, 217, 171, 0.14);
+    --warning: #e9b764;
+    --warning-soft: rgba(233, 183, 100, 0.14);
+    --danger: #ff8a80;
+    --danger-soft: rgba(255, 138, 128, 0.13);
+    --danger-line: rgba(255, 138, 128, 0.28);
+
+    /* 深色主题下的纸面：比预览底板更亮，形成"纸张"层次 */
+    --paper: #1b2b26;
+    --paper-backdrop: #0e1a16;
+    --code-ink: #ff9ec2;
+    --code-bg: #12201b;
+
+    --scroll-thumb: rgba(214, 235, 227, 0.2);
+    --scroll-thumb-hover: rgba(214, 235, 227, 0.34);
+    --selection-ink: #04140f;
+    --selection-bg: rgba(47, 199, 149, 0.3);
+    /* 暗色下强调色更亮，其上的文字改用深色以保证对比度 */
+    --on-accent: #04231a;
+
+    --el-color-primary: #2fc795;
+    --el-color-primary-light-3: #4fd0a4;
+    --el-color-primary-light-5: #74dbb6;
+    --el-color-primary-light-7: rgba(47, 199, 149, 0.28);
+    --el-color-primary-light-8: rgba(47, 199, 149, 0.2);
+    --el-color-primary-light-9: rgba(47, 199, 149, 0.14);
+    --el-color-primary-dark-2: #7fe3c2;
+    --el-border-color: rgba(232, 242, 238, 0.18);
+    --el-border-color-light: rgba(232, 242, 238, 0.14);
+    --el-border-color-lighter: rgba(232, 242, 238, 0.1);
+    --el-fill-color-blank: #131f1b;
+    --el-fill-color: #192723;
+    --el-fill-color-light: #1b2b26;
+    --el-bg-color: #131f1b;
+    --el-bg-color-overlay: #192723;
+    --el-bg-color-page: #08110f;
+    --el-text-color-primary: #e8f2ee;
+    --el-text-color-regular: #c3d4ce;
+    --el-text-color-secondary: #93a7a0;
+    --el-text-color-placeholder: #7b8f88;
+    --el-box-shadow-light: 0 12px 32px rgba(0, 0, 0, 0.45);
 }
 
 * {
@@ -46,16 +164,16 @@ body,
 }
 
 html {
-    background: #f3f7f5;
+    background: var(--bg);
 }
 
 body {
     min-width: 320px;
     overflow: hidden;
     background:
-        radial-gradient(circle at 13% 12%, rgba(47, 201, 154, 0.1), transparent 28rem),
-        radial-gradient(circle at 92% 86%, rgba(50, 133, 255, 0.07), transparent 30rem),
-        #f3f7f5;
+        radial-gradient(circle at 13% 12%, var(--bg-glow-a), transparent 28rem),
+        radial-gradient(circle at 92% 86%, var(--bg-glow-b), transparent 30rem),
+        var(--bg);
 }
 
 button,
@@ -78,13 +196,13 @@ a:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-    outline: 3px solid rgba(17, 168, 121, 0.28);
+    outline: 3px solid var(--selection-bg);
     outline-offset: 2px;
 }
 
 ::selection {
-    color: #073e30;
-    background: rgba(40, 211, 156, 0.28);
+    color: var(--selection-ink);
+    background: var(--selection-bg);
 }
 
 ::-webkit-scrollbar {
@@ -99,12 +217,12 @@ select:focus-visible {
 ::-webkit-scrollbar-thumb {
     border: 3px solid transparent;
     border-radius: 999px;
-    background: rgba(64, 80, 76, 0.24);
+    background: var(--scroll-thumb);
     background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(64, 80, 76, 0.4);
+    background: var(--scroll-thumb-hover);
     background-clip: padding-box;
 }
 
@@ -146,7 +264,7 @@ select:focus-visible {
     height: 7px;
     border-radius: 999px;
     background: var(--accent);
-    box-shadow: 0 0 0 5px rgba(17, 168, 121, 0.1);
+    box-shadow: 0 0 0 5px var(--accent-soft);
     content: "";
 }
 
@@ -181,7 +299,7 @@ select:focus-visible {
 .el-select__wrapper {
     border: 1px solid var(--line) !important;
     border-radius: 12px !important;
-    background: #f8fbfa !important;
+    background: var(--field) !important;
     box-shadow: none !important;
     transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
 }
@@ -190,7 +308,7 @@ select:focus-visible {
 .el-textarea__inner:hover,
 .el-input-number:hover,
 .el-select__wrapper:hover {
-    border-color: rgba(17, 168, 121, 0.38) !important;
+    border-color: var(--line-strong) !important;
 }
 
 .el-input__wrapper.is-focus,
@@ -198,8 +316,8 @@ select:focus-visible {
 .el-input-number:focus-within,
 .el-select__wrapper.is-focused {
     border-color: var(--accent) !important;
-    background: #fff !important;
-    box-shadow: 0 0 0 4px rgba(17, 168, 121, 0.1) !important;
+    background: var(--field-hover) !important;
+    box-shadow: 0 0 0 4px var(--accent-soft) !important;
 }
 
 .el-button {
@@ -211,13 +329,14 @@ select:focus-visible {
 
 .el-button--primary {
     border-color: var(--accent);
+    color: var(--on-accent);
     background: var(--accent);
     box-shadow: 0 8px 20px rgba(17, 168, 121, 0.2);
 }
 
 .el-checkbox__label,
 .el-form-item__label {
-    color: #40504c;
+    color: var(--ink-soft);
 }
 
 #nprogress .bar {

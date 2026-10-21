@@ -336,7 +336,7 @@ onMounted(() => {
   background:
       linear-gradient(45deg, rgba(22, 61, 50, 0.025) 25%, transparent 25%, transparent 75%, rgba(22, 61, 50, 0.025) 75%),
       linear-gradient(45deg, rgba(22, 61, 50, 0.025) 25%, transparent 25%, transparent 75%, rgba(22, 61, 50, 0.025) 75%),
-      #f7faf9;
+      var(--field);
   background-position: 0 0, 12px 12px;
   background-size: 24px 24px;
 }
@@ -352,7 +352,7 @@ onMounted(() => {
 
   h2 {
     margin: 20px 0 7px;
-    color: #314842;
+    color: var(--ink);
     font-size: 1rem;
   }
 
@@ -489,7 +489,7 @@ onMounted(() => {
   gap: 18px;
   padding: 30px 24px;
   border-left: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--surface);
 }
 
 .operate-title {
@@ -502,7 +502,7 @@ onMounted(() => {
 
   h2 {
     margin: 7px 0;
-    color: #263d37;
+    color: var(--ink);
     font-size: 1.25rem;
     letter-spacing: -0.035em;
   }
@@ -556,10 +556,10 @@ onMounted(() => {
     padding: 14px;
     border: 1px solid var(--line);
     border-radius: 12px;
-    background: #f7faf9;
+    background: var(--field);
 
     strong {
-      color: #24453b;
+      color: var(--ink);
       font-size: 1.25rem;
     }
 
@@ -575,7 +575,7 @@ onMounted(() => {
   gap: 8px;
 
   label {
-    color: #53625e;
+    color: var(--muted);
     font-size: 0.7rem;
     font-weight: 650;
   }

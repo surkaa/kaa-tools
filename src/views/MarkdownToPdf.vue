@@ -5,6 +5,7 @@ import NProgress from 'nprogress';
 import 'katex/dist/katex.min.css';
 import {cleanupMermaidArtifacts, renderMarkdown, renderMermaidBlocks} from '../utils/markdownRender';
 import {exportElementToPdf} from '../utils/markdownToPdf';
+import {useTheme} from '../utils/useTheme';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 MB
 const ACCEPTED_EXTENSIONS = ['.md', '.markdown', '.txt'];
@@ -72,6 +73,8 @@ const isExporting = ref(false);
 const exportProgress = ref(0);
 const renderError = ref('');
 const mermaidCount = ref(0);
+/** 当前主题，决定预览纸面与 Mermaid 图表的深浅 */
+const {resolvedTheme} = useTheme();
 /** 上次编辑内容是否有缓存（用于按钮禁用态与初始探测） */
 const hasCache = ref(false);
 
@@ -180,7 +183,10 @@ async function refreshPreview() {
   const container = previewRef.value;
   if (!container) return;
   try {
-    mermaidCount.value = await renderMermaidBlocks(container);
+    // 图表配色跟随纸张主题：暗色纸面用 dark，亮色纸面用 neutral
+    mermaidCount.value = await renderMermaidBlocks(container, {
+      theme: resolvedTheme.value === 'dark' ? 'dark' : 'neutral',
+    });
     renderError.value = '';
   } catch (error) {
     renderError.value = (error as Error)?.message || '预览渲染失败';
@@ -192,6 +198,18 @@ async function refreshPreview() {
 watch(renderedHtml, () => {
   refreshPreview();
 }, {immediate: true});
+
+// 主题切换后 Mermaid 的 SVG 配色不会自动更新：清空后按新主题重绘
+watch(resolvedTheme, async () => {
+  const container = previewRef.value;
+  if (!container) return;
+  container.querySelectorAll<HTMLElement>('.mermaid-block[data-rendered]').forEach((block) => {
+    block.removeAttribute('data-rendered');
+    block.classList.remove('mermaid-ready');
+    block.innerHTML = '';
+  });
+  await refreshPreview();
+});
 
 onMounted(() => {
   // 读取持久化的字号，页面加载即生效
@@ -309,9 +327,16 @@ async function downloadPdf() {
   exportProgress.value = 0;
   NProgress.start();
 
+  // 导出画布/PDF 底色与当前纸张一致（暗色主题导出深色纸面）
+  const rawBackground = getComputedStyle(element).backgroundColor;
+  const backgroundColor = rawBackground && rawBackground !== 'rgba(0, 0, 0, 0)'
+      ? rawBackground
+      : '#ffffff';
+
   try {
     await exportElementToPdf(element, {
       title: fileName.value || 'markdown',
+      backgroundColor,
       onProgress: (progress) => {
         exportProgress.value = progress;
         NProgress.set(progress);
@@ -331,7 +356,7 @@ async function downloadPdf() {
 
 <template>
   <div id="markdown-to-pdf" class="tool-page">
-    <!-- 顶部两栏：左为标题区（按文字宽度自适应），右为上传面板（占满剩余空间） -->
+    <!-- 顶部两栏：左为标题区（占满剩余空间），右为上传面板（按自身内容宽度取宽） -->
     <div class="top-row">
       <header class="tool-header">
         <span class="tool-eyebrow">Document export</span>
@@ -483,7 +508,8 @@ async function downloadPdf() {
 /* 顶栏高度由内容决定，不参与剩余空间分配 */
 .top-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  /* 标题区占满剩余空间，上传面板按自身内容宽度取宽（不拉伸） */
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 28px;
   margin-bottom: 18px;
@@ -499,7 +525,9 @@ async function downloadPdf() {
 }
 
 .upload-panel {
-  width: 100%;
+  /* 宽度按内容自适应，不拉伸占满整行 */
+  width: auto;
+  max-width: 100%;
   margin: 0;
   padding: 16px;
 }
@@ -521,7 +549,7 @@ async function downloadPdf() {
   padding: 20px 22px;
   border: 1.5px dashed var(--line-strong);
   border-radius: 20px;
-  background: #fafcfb;
+  background: var(--panel-muted);
   cursor: pointer;
   transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
 
@@ -578,7 +606,7 @@ async function downloadPdf() {
   }
 
   small {
-    color: #93a19c;
+    color: var(--muted-soft);
     font-size: 0.68rem;
   }
 }
@@ -588,7 +616,7 @@ async function downloadPdf() {
   flex-wrap: wrap;
   gap: 4px 14px;
   margin-top: 8px;
-  color: #93a19c;
+  color: var(--muted-soft);
   font-size: 0.68rem;
 }
 
@@ -688,8 +716,8 @@ button {
   padding: 0 12px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  color: #334943;
-  background: #f6faf8;
+  color: var(--ink-soft);
+  background: var(--panel-muted);
   cursor: pointer;
   font-size: 0.7rem;
   font-weight: 650;
@@ -697,12 +725,12 @@ button {
 
   &:hover:not(:disabled) {
     border-color: rgba(17, 168, 121, 0.34);
-    background: #fff;
+    background: var(--field-hover);
     transform: translateY(-1px);
   }
 
   &:disabled {
-    color: #a6b2ae;
+    color: var(--muted-soft);
     cursor: not-allowed;
   }
 }
@@ -710,7 +738,7 @@ button {
 .format-chip {
   padding: 6px 9px;
   border-radius: 8px;
-  color: #7e8d88;
+  color: var(--muted);
   background: var(--surface-soft);
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   font-size: 0.62rem;
@@ -729,20 +757,20 @@ textarea {
   border: 1px solid var(--line);
   border-radius: 15px;
   outline: none;
-  color: #263d37;
-  background: #f7faf9;
+  color: var(--ink);
+  background: var(--field);
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   font-size: 0.78rem;
   line-height: 1.7;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 
   &::placeholder {
-    color: #a8b3af;
+    color: var(--muted-soft);
   }
 
   &:focus {
     border-color: var(--accent);
-    background: #fff;
+    background: var(--field-hover);
     box-shadow: 0 0 0 4px rgba(17, 168, 121, 0.1);
   }
 }
@@ -758,7 +786,7 @@ textarea {
 }
 
 .text-danger {
-  color: #cf4b47;
+  color: var(--danger);
   font-weight: 600;
 }
 
@@ -774,17 +802,18 @@ textarea {
   overscroll-behavior: contain;
   border: 1px solid var(--line);
   border-radius: 15px;
-  background: #eef3f1;
+  background: var(--paper-backdrop);
 }
 
-/* PDF 导出区域：白底、可读排版，导出与预览共用同一套样式 */
+/* PDF 导出区域：纸张配色随主题变化（--paper / --ink 等），
+   预览与导出的 PDF 使用同一套样式，两者始终一致 */
 .markdown-body {
   /* 高度随内容，不再强制撑满预览区 */
   padding: clamp(26px, 4vw, 44px);
   border-radius: 10px;
-  color: #1d2a27;
-  background: #ffffff;
-  box-shadow: 0 8px 26px rgba(24, 54, 47, 0.08);
+  color: var(--ink);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
   line-height: 1.75;
   overflow-wrap: break-word;
 
@@ -795,7 +824,7 @@ textarea {
   :deep(h5),
   :deep(h6) {
     margin: 1.5em 0 0.6em;
-    color: #11201d;
+    color: var(--ink);
     font-weight: 700;
     letter-spacing: -0.02em;
     line-height: 1.3;
@@ -807,13 +836,13 @@ textarea {
 
   :deep(h1) {
     padding-bottom: 0.35em;
-    border-bottom: 2px solid #e2ece8;
+    border-bottom: 2px solid var(--hairline-strong);
     font-size: 1.9em;
   }
 
   :deep(h2) {
     padding-bottom: 0.3em;
-    border-bottom: 1px solid #e7efec;
+    border-bottom: 1px solid var(--hairline);
     font-size: 1.5em;
   }
 
@@ -822,7 +851,7 @@ textarea {
   :deep(h5) { font-size: 0.98em; }
 
   :deep(h6) {
-    color: #5d6b67;
+    color: var(--muted);
     font-size: 0.92em;
   }
 
@@ -831,7 +860,7 @@ textarea {
   }
 
   :deep(a) {
-    color: #0d8a63;
+    color: var(--accent-strong);
     text-decoration: underline;
     text-underline-offset: 2px;
   }
@@ -862,10 +891,10 @@ textarea {
   :deep(blockquote) {
     margin: 0 0 1em;
     padding: 0.6em 1.1em;
-    border-left: 4px solid #4bc39b;
+    border-left: 4px solid var(--accent);
     border-radius: 0 8px 8px 0;
-    color: #47574f;
-    background: #f4faf7;
+    color: var(--ink-soft);
+    background: var(--panel-muted);
 
     p:last-child {
       margin-bottom: 0;
@@ -875,8 +904,8 @@ textarea {
   :deep(code) {
     padding: 0.15em 0.4em;
     border-radius: 5px;
-    color: #b4325a;
-    background: #f2f6f4;
+    color: var(--code-ink);
+    background: var(--code-bg);
     font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
     font-size: 0.88em;
   }
@@ -885,14 +914,14 @@ textarea {
     margin: 0 0 1.2em;
     padding: 14px 16px;
     overflow-x: auto;
-    border: 1px solid #e3ece9;
+    border: 1px solid var(--hairline);
     border-radius: 10px;
-    background: #f7faf9;
+    background: var(--code-bg);
     line-height: 1.6;
 
     code {
       padding: 0;
-      color: #263d37;
+      color: var(--ink);
       background: transparent;
       font-size: 0.84em;
     }
@@ -909,27 +938,27 @@ textarea {
   :deep(th),
   :deep(td) {
     padding: 8px 11px;
-    border: 1px solid #dfe9e5;
+    border: 1px solid var(--hairline);
     text-align: left;
     vertical-align: top;
     word-break: break-word;
   }
 
   :deep(th) {
-    color: #17332b;
-    background: #eef7f3;
+    color: var(--ink);
+    background: var(--surface-soft);
     font-weight: 700;
   }
 
   :deep(tr:nth-child(even) td) {
-    background: #fbfdfc;
+    background: var(--panel-muted);
   }
 
   :deep(hr) {
     height: 1px;
     margin: 1.8em 0;
     border: 0;
-    background: #e2ece8;
+    background: var(--hairline-strong);
   }
 
   :deep(img) {
@@ -945,8 +974,8 @@ textarea {
   }
 
   :deep(.math-error) {
-    color: #c0392b;
-    background: #fdf0ee;
+    color: var(--danger);
+    background: var(--danger-soft);
   }
 
   :deep(.mermaid-block) {
@@ -954,9 +983,9 @@ textarea {
     justify-content: center;
     margin: 0 0 1.2em;
     padding: 14px;
-    border: 1px solid #e3ece9;
+    border: 1px solid var(--hairline);
     border-radius: 10px;
-    background: #fbfdfc;
+    background: var(--panel-muted);
     overflow-x: auto;
 
     svg {
@@ -966,8 +995,8 @@ textarea {
   }
 
   :deep(.mermaid-failed) {
-    color: #b03a2e;
-    background: #fdf0ee;
+    color: var(--danger);
+    background: var(--danger-soft);
     font-size: 0.82em;
   }
 }
@@ -982,7 +1011,7 @@ textarea {
   border: 1px dashed var(--line-strong);
   border-radius: 12px;
   color: var(--muted);
-  background: #fafcfb;
+  background: var(--panel-muted);
 
   p {
     margin: 0;
@@ -1048,7 +1077,7 @@ textarea {
   min-width: 156px;
   min-height: 46px;
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   background: var(--accent);
   box-shadow: 0 10px 26px rgba(17, 168, 121, 0.22);
   font-size: 0.82rem;
@@ -1059,9 +1088,9 @@ textarea {
   }
 
   &:disabled {
-    border-color: #c9d5d1;
-    color: #fff;
-    background: #c9d5d1;
+    border-color: var(--hairline-strong);
+    color: var(--muted);
+    background: var(--surface-soft);
     box-shadow: none;
     cursor: not-allowed;
   }

@@ -341,7 +341,7 @@ onMounted(() => {
   padding: 0 15px;
   border: 1px solid var(--line);
   border-radius: 13px;
-  background: #f8fbfa;
+  background: var(--field);
 }
 
 :deep(.checkbox-grid .el-checkbox.is-checked) {
@@ -356,7 +356,7 @@ onMounted(() => {
 :deep(.el-checkbox__label small) {
   display: block;
   margin-top: 2px;
-  color: #98a49f;
+  color: var(--muted-soft);
   font-size: 0.6rem;
   font-weight: 500;
 }
@@ -375,7 +375,7 @@ onMounted(() => {
   gap: 7px;
 
   label {
-    color: #52615d;
+    color: var(--muted);
     font-size: 0.72rem;
     font-weight: 650;
   }
@@ -397,8 +397,8 @@ onMounted(() => {
   padding: 0 16px;
   border: 1px solid var(--line);
   border-radius: 11px;
-  color: #31443f;
-  background: #f7faf9;
+  color: var(--ink-soft);
+  background: var(--field);
   cursor: pointer;
   font-size: 0.76rem;
   font-weight: 650;
@@ -432,8 +432,8 @@ onMounted(() => {
   min-height: 36px;
   margin-left: 0;
   padding-inline: 12px;
-  color: #a34e4e;
-  background: #fff7f7;
+  color: var(--danger);
+  background: var(--danger-soft);
 }
 
 .flex-container {
@@ -447,8 +447,8 @@ onMounted(() => {
   padding: 8px 11px;
   border-color: var(--line);
   border-radius: 10px;
-  color: #315047;
-  background: #f5faf8;
+  color: var(--ink-soft);
+  background: var(--field);
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 

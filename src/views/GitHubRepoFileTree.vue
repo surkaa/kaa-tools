@@ -152,7 +152,7 @@ function copyOutput() {
   }
 
   > span {
-    color: #93a19d;
+    color: var(--muted-soft);
     font-size: 0.64rem;
     font-weight: 750;
     letter-spacing: 0.14em;
@@ -232,7 +232,7 @@ function copyOutput() {
   overflow-y: auto;
   border: 1px solid var(--line);
   border-radius: 16px;
-  background: #f7faf9;
+  background: var(--field);
   list-style: none;
 
   li {
@@ -244,11 +244,11 @@ function copyOutput() {
     transition: background 0.18s ease;
 
     &:hover {
-      background: #eaf4f0;
+      background: var(--surface-soft);
     }
 
     > span {
-      color: #a1aca8;
+      color: var(--muted-soft);
       font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
       font-size: 0.64rem;
     }
@@ -256,7 +256,7 @@ function copyOutput() {
     code {
       min-width: 0;
       overflow-wrap: anywhere;
-      color: #304a42;
+      color: var(--ink-soft);
       font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
       font-size: 0.74rem;
     }
@@ -269,13 +269,13 @@ function copyOutput() {
   place-items: center;
   align-content: center;
   padding: 36px;
-  border: 1px dashed rgba(23, 37, 34, 0.16);
+  border: 1px dashed var(--line-strong);
   border-radius: 24px;
   text-align: center;
 
   h3 {
     margin: 18px 0 6px;
-    color: #334a44;
+    color: var(--ink);
     font-size: 0.95rem;
   }
 

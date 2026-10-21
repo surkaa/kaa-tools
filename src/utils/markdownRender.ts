@@ -136,7 +136,15 @@ export function renderMarkdown(source: string): string {
  * 在已插入 DOM 的预览容器内绘制 Mermaid 图表。
  * 图表源码经过转义后写入，避免破坏页面结构。
  */
-export async function renderMermaidBlocks(container: HTMLElement): Promise<number> {
+export interface MermaidRenderOptions {
+  /** 配色主题：亮色纸面用 neutral，暗色纸面用 dark */
+  theme?: 'neutral' | 'dark';
+}
+
+export async function renderMermaidBlocks(
+    container: HTMLElement,
+    options: MermaidRenderOptions = {},
+): Promise<number> {
   const blocks = Array.from(
       container.querySelectorAll<HTMLElement>('.mermaid-block:not([data-rendered])')
   );
@@ -148,7 +156,7 @@ export async function renderMermaidBlocks(container: HTMLElement): Promise<numbe
   mermaid.initialize({
     startOnLoad: false,
     securityLevel: 'strict',
-    theme: 'neutral',
+    theme: options.theme ?? 'neutral',
     fontFamily: 'Inter, "Microsoft YaHei", sans-serif',
   });
 

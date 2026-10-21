@@ -360,7 +360,7 @@ onUnmounted(() => {
 
 :deep(.el-form-item__label) {
   padding-bottom: 7px;
-  color: #52615d;
+  color: var(--muted);
   font-size: 0.76rem;
   font-weight: 650;
 }
@@ -377,7 +377,7 @@ onUnmounted(() => {
   padding: 0;
   border-color: var(--line);
   color: var(--accent-strong);
-  background: #f6faf8;
+  background: var(--field);
 }
 
 .live-panel {
@@ -394,8 +394,8 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  color: #137657;
-  background: #e6f8f1;
+  color: var(--success);
+  background: var(--success-soft);
 
   i {
     width: 6px;
@@ -406,8 +406,8 @@ onUnmounted(() => {
   }
 
   &.is-paused {
-    color: #9b6d19;
-    background: #fff5df;
+    color: var(--warning);
+    background: var(--warning-soft);
 
     i {
       background: #dfa538;
@@ -425,8 +425,8 @@ onUnmounted(() => {
   padding: 0 15px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  color: #1d3c34;
-  background: #f5f9f7;
+  color: var(--ink);
+  background: var(--field);
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   font-size: 0.9rem;
 }

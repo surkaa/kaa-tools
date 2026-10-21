@@ -6,6 +6,21 @@
     <meta name="theme-color" content="#0b1c18" />
     <meta name="description" content="Kaa Tools — 为日常开发、研究和内容处理准备的轻量工具箱。" />
     <title>Kaa Tools · 轻量工具箱</title>
+    <script>
+      // 在样式生效前就确定主题，避免暗色下首屏出现亮色闪烁
+      (function () {
+        try {
+          var stored = localStorage.getItem('kaa.theme');
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var theme = stored === 'light' || stored === 'dark' ? stored : (prefersDark ? 'dark' : 'light');
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.classList.toggle('dark', theme === 'dark');
+          document.documentElement.style.colorScheme = theme;
+        } catch (error) {
+          /* 忽略：无 localStorage 时按系统偏好由应用内逻辑兜底 */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>
