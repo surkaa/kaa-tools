@@ -87,7 +87,7 @@ const isOversize = computed(() => byteSize.value > MAX_FILE_SIZE);
 
 const sampleLines = SAMPLE_MARKDOWN.split('\n').length;
 
-/** 本地缓存：只保存一份 Markdown 内容 */
+/** 本地缓存：只保存一份 Markdown 内容，由「保存缓存」按钮主动写入 */
 const CACHE_KEY = 'kaa-tools.markdown-to-pdf.content';
 
 interface CachedDraft {
@@ -110,33 +110,35 @@ function readCache(): CachedDraft | null {
   }
 }
 
-function writeCache() {
+/** 主动保存当前 Markdown 到 localStorage */
+function saveCache() {
+  if (!markdown.value.trim()) {
+    ElMessage.warning('当前没有可保存的内容');
+    return;
+  }
   try {
-    if (!markdown.value.trim()) {
-      localStorage.removeItem(CACHE_KEY);
-      hasCache.value = false;
-      return;
-    }
     const draft: CachedDraft = {markdown: markdown.value, fileName: fileName.value};
     localStorage.setItem(CACHE_KEY, JSON.stringify(draft));
     hasCache.value = true;
+    ElMessage.success('已保存到本地缓存');
   } catch {
-    // 隐私模式或超出配额时静默降级，不影响主要功能
-    hasCache.value = false;
+    // 隐私模式或超出配额时给出提示，不影响主流程
+    ElMessage.error('保存失败，浏览器存储不可用或已满');
   }
 }
 
+/** 读取缓存并覆盖当前编辑内容 */
 function loadCache() {
   const draft = readCache();
   if (!draft) {
     hasCache.value = false;
-    ElMessage.warning('没有可恢复的缓存内容');
+    ElMessage.warning('没有可读取的缓存内容');
     return;
   }
   markdown.value = draft.markdown;
   fileName.value = draft.fileName;
   renderError.value = '';
-  ElMessage.success('已恢复上次编辑的内容');
+  ElMessage.success('已加载缓存内容');
 }
 
 function formatBytes(bytes: number): string {
@@ -164,23 +166,13 @@ watch(renderedHtml, () => {
   refreshPreview();
 }, {immediate: true});
 
-// 编辑后自动写入缓存（防抖，避免每次按键都写 localStorage）
-let cacheTimer: ReturnType<typeof setTimeout> | null = null;
-watch([markdown, fileName], () => {
-  if (cacheTimer) clearTimeout(cacheTimer);
-  cacheTimer = setTimeout(writeCache, 400);
-});
-
 onMounted(() => {
   refreshPreview();
+  // 探测是否已有缓存，用于「加载缓存Markdown」的可用状态
   hasCache.value = readCache() !== null;
 });
 
 onBeforeUnmount(() => {
-  if (cacheTimer) {
-    clearTimeout(cacheTimer);
-    writeCache();
-  }
   cleanupMermaidArtifacts();
 });
 
@@ -371,7 +363,8 @@ async function downloadPdf() {
             <button type="button" @click="loadSample">加载示例</button>
             <button type="button" @click="copyMarkdown">复制</button>
             <button type="button" @click="clearAll">清空</button>
-            <button type="button" :disabled="!hasCache" @click="loadCache">加载上次内容</button>
+            <button type="button" @click="saveCache">保存缓存</button>
+            <button type="button" :disabled="!hasCache" @click="loadCache">加载缓存</button>
           </div>
         </div>
 
@@ -428,10 +421,12 @@ async function downloadPdf() {
   width: 100%;
 }
 
-/* 页面内容占满可用宽度，与下方各面板左右对齐 */
+/* 页面内容占满可用宽度；缩进与 .upload-panel 的内边距一致，
+   使标题、描述与上传面板内的文字左右对齐 */
 .tool-header {
   width: 100%;
   margin-inline: 0;
+  padding-inline: 17px; /* 16px 内边距 + 1px 边框 */
 }
 
 .tool-description {
@@ -565,10 +560,15 @@ async function downloadPdf() {
   align-items: center;
   gap: 11px;
   min-width: 0;
+  flex: 1 1 auto;
 
   h2 {
     margin: 0 0 3px;
     color: var(--ink);
+    /* 标题不换行，避免右侧按钮组被挤到第二行 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-size: 1rem;
     letter-spacing: -0.02em;
   }
@@ -598,6 +598,15 @@ async function downloadPdf() {
   flex-wrap: wrap;
   gap: 6px;
   justify-content: flex-end;
+  /* 按钮组保持完整宽度，不被标题挤压换行 */
+  flex: 0 0 auto;
+
+  button {
+    min-height: 32px;
+    padding: 0 9px;
+    font-size: 0.66rem;
+    white-space: nowrap;
+  }
 }
 
 button {
@@ -998,7 +1007,12 @@ textarea {
   }
 }
 
+/* 窄屏下保持与面板内文字一致的缩进（面板内边距 16px + 边框 1px） */
 @media (max-width: 720px) {
+  .tool-header {
+    padding-inline: 17px;
+  }
+
   .upload-row {
     grid-template-columns: 1fr;
   }
