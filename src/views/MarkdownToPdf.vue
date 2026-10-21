@@ -64,6 +64,8 @@ graph TD
 const markdown = ref('');
 const fileName = ref('markdown');
 const previewRef = ref<HTMLElement | null>(null);
+const editorRef = ref<HTMLTextAreaElement | null>(null);
+const paperScrollRef = ref<HTMLElement | null>(null);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const isDragging = ref(false);
 const isExporting = ref(false);
@@ -203,6 +205,23 @@ onBeforeUnmount(() => {
   cleanupMermaidArtifacts();
 });
 
+/**
+ * 编辑区滚动时，预览区按相同滚动比例跟随。
+ * 例如 Markdown 滚到 30%，预览区也定位到 30%。
+ */
+function onEditorScroll() {
+  const editor = editorRef.value;
+  const paper = paperScrollRef.value;
+  if (!editor || !paper) return;
+
+  const editorMax = editor.scrollHeight - editor.clientHeight;
+  const paperMax = paper.scrollHeight - paper.clientHeight;
+  // 任一侧没有可滚动空间时不同步，避免除零
+  if (editorMax <= 0 || paperMax <= 0) return;
+
+  paper.scrollTop = (editor.scrollTop / editorMax) * paperMax;
+}
+
 function loadSample() {
   markdown.value = SAMPLE_MARKDOWN;
   fileName.value = 'markdown-sample';
@@ -318,8 +337,7 @@ async function downloadPdf() {
         <span class="tool-eyebrow">Document export</span>
         <h1 class="tool-title">Markdown 转 PDF</h1>
         <p class="tool-description">
-          将 Markdown 内容一键导出为专业 A4 PDF 文档，支持标题层级、表格、代码块、KaTeX 数学公式与 Mermaid 图表。
-          全部处理在浏览器本地完成，内容不会上传到任何服务器。
+          支持公式与图表，浏览器本地导出 A4 PDF。
         </p>
       </header>
 
@@ -399,9 +417,11 @@ async function downloadPdf() {
         </div>
 
         <textarea
+            ref="editorRef"
             v-model="markdown"
             spellcheck="false"
             placeholder="# 在这里输入 Markdown&#10;&#10;支持标题、表格、代码块、$公式$ 与 mermaid 图表。"
+            @scroll="onEditorScroll"
         ></textarea>
 
         <div class="editor-footer">
@@ -427,7 +447,7 @@ async function downloadPdf() {
           <span class="format-chip">A4 · 纵向</span>
         </div>
 
-        <div class="paper-scroll">
+        <div ref="paperScrollRef" class="paper-scroll">
           <article
               v-if="markdown.trim()"
               ref="previewRef"
@@ -449,6 +469,8 @@ async function downloadPdf() {
 <style scoped lang="scss">
 #markdown-to-pdf {
   width: 100%;
+  /* 本页内边距取全局 .tool-page 的一半，让内容区更宽裕 */
+  padding: clamp(12px, 2vw, 27px);
   /* 撑满外层滚动容器，workspace 占据顶栏之外的剩余高度；
      面板内部各自滚动，页面本身不滚动 */
   height: 100%;
@@ -757,7 +779,7 @@ textarea {
 
 /* PDF 导出区域：白底、可读排版，导出与预览共用同一套样式 */
 .markdown-body {
-  min-height: 100%;
+  /* 高度随内容，不再强制撑满预览区 */
   padding: clamp(26px, 4vw, 44px);
   border-radius: 10px;
   color: #1d2a27;
@@ -1069,6 +1091,8 @@ textarea {
     height: auto;
     min-height: 100%;
     overflow: visible;
+    /* 与全局窄屏 .tool-page 同比例减半 */
+    padding: 12px 9px 52px;
   }
 
   .workspace {
