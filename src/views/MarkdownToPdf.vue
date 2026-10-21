@@ -73,9 +73,34 @@ const mermaidCount = ref(0);
 /** 上次编辑内容是否有缓存（用于按钮禁用态与初始探测） */
 const hasCache = ref(false);
 
+/** 字号设置单独持久化，页面加载时读取 */
+const FONT_SIZE_KEY = 'kaa-tools.markdown-to-pdf.font-size';
+const DEFAULT_FONT_SIZE = 13;
+const FONT_SIZE_RANGE = {min: 10, max: 18};
+
+function readFontSize(): number {
+  try {
+    const raw = localStorage.getItem(FONT_SIZE_KEY);
+    if (!raw) return DEFAULT_FONT_SIZE;
+    const size = Number(raw);
+    if (!Number.isFinite(size)) return DEFAULT_FONT_SIZE;
+    return Math.min(FONT_SIZE_RANGE.max, Math.max(FONT_SIZE_RANGE.min, Math.round(size)));
+  } catch {
+    return DEFAULT_FONT_SIZE;
+  }
+}
+
 // 仅保留可调项：正文字号（纸张、方向、页边距、清晰度、文件名均使用固定默认值）
 const settings = ref({
-  fontSize: 13,
+  fontSize: DEFAULT_FONT_SIZE,
+});
+
+watch(() => settings.value.fontSize, (size) => {
+  try {
+    localStorage.setItem(FONT_SIZE_KEY, String(size));
+  } catch {
+    // 存储不可用时忽略，字号在当前会话内仍然生效
+  }
 });
 
 const charCount = computed(() => markdown.value.length);
@@ -167,8 +192,10 @@ watch(renderedHtml, () => {
 }, {immediate: true});
 
 onMounted(() => {
+  // 读取持久化的字号，页面加载即生效
+  settings.value.fontSize = readFontSize();
   refreshPreview();
-  // 探测是否已有缓存，用于「加载缓存Markdown」的可用状态
+  // 探测是否已有缓存，用于「加载缓存」的可用状态
   hasCache.value = readCache() !== null;
 });
 
@@ -285,16 +312,18 @@ async function downloadPdf() {
 
 <template>
   <div id="markdown-to-pdf" class="tool-page">
-    <header class="tool-header">
-      <span class="tool-eyebrow">Document export</span>
-      <h1 class="tool-title">Markdown 转 PDF</h1>
-      <p class="tool-description">
-        将 Markdown 内容一键导出为专业 A4 PDF 文档，支持标题层级、表格、代码块、KaTeX 数学公式与 Mermaid 图表。
-        全部处理在浏览器本地完成，内容不会上传到任何服务器。
-      </p>
-    </header>
+    <!-- 顶部两栏：左为标题区（按文字宽度自适应），右为上传面板（占满剩余空间） -->
+    <div class="top-row">
+      <header class="tool-header">
+        <span class="tool-eyebrow">Document export</span>
+        <h1 class="tool-title">Markdown 转 PDF</h1>
+        <p class="tool-description">
+          将 Markdown 内容一键导出为专业 A4 PDF 文档，支持标题层级、表格、代码块、KaTeX 数学公式与 Mermaid 图表。
+          全部处理在浏览器本地完成，内容不会上传到任何服务器。
+        </p>
+      </header>
 
-    <section class="upload-panel surface-card">
+      <section class="upload-panel surface-card">
       <div class="upload-row">
         <div
             class="dropzone"
@@ -347,7 +376,8 @@ async function downloadPdf() {
           accept=".md,.markdown,.txt,text/markdown,text/plain"
           @change="onFileChange"
       />
-    </section>
+      </section>
+    </div>
 
     <main class="workspace">
       <section class="editor-panel surface-card">
@@ -419,21 +449,35 @@ async function downloadPdf() {
 <style scoped lang="scss">
 #markdown-to-pdf {
   width: 100%;
+  /* 固定为滚动容器高度，使 workspace 占据顶栏之外的剩余空间；
+     内容过高时由内部编辑区/预览区各自滚动，而不是整页滚动 */
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-/* header 与 .upload-panel 外框左右对齐（同宽、同起点） */
+/* 顶部两栏：标题区按文字宽度自适应，上传面板占满剩余空间 */
+.top-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 28px;
+  margin-bottom: 18px;
+}
+
 .tool-header {
-  width: 100%;
-  margin-inline: 0;
+  margin: 0;
 }
 
 .tool-description {
-  max-width: 900px;
+  max-width: 420px;
 }
 
 .upload-panel {
   width: 100%;
-  margin: 0 0 18px;
+  margin: 0;
   padding: 16px;
 }
 
@@ -535,6 +579,9 @@ async function downloadPdf() {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
   margin: 0 0 18px;
+  /* 占据顶栏之后的剩余高度 */
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .editor-panel,
@@ -644,8 +691,8 @@ button {
 
 textarea {
   width: 100%;
-  min-height: 520px;
-  flex: 1;
+  min-height: 320px;
+  flex: 1 1 auto;
   padding: 18px;
   resize: vertical;
   border: 1px solid var(--line);
@@ -685,9 +732,9 @@ textarea {
 }
 
 .paper-scroll {
-  min-height: 560px;
-  max-height: 72vh;
-  flex: 1;
+  /* 高度由父级剩余空间决定，不再固定，避免出现双重滚动 */
+  min-height: 320px;
+  flex: 1 1 auto;
   padding: 8px;
   overflow: auto;
   border: 1px solid var(--line);
@@ -891,7 +938,8 @@ textarea {
 }
 
 .preview-empty {
-  min-height: 560px;
+  min-height: 320px;
+  height: 100%;
   display: grid;
   place-items: center;
   align-content: center;
@@ -987,6 +1035,18 @@ textarea {
     margin-left: 9px;
     font-style: normal;
     font-weight: 700;
+  }
+}
+
+/* 顶部两栏需要足够宽度，低于此值改为上下堆叠 */
+@media (max-width: 1360px) {
+  .top-row {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .tool-description {
+    max-width: 680px;
   }
 }
 
