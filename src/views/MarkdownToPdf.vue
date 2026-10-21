@@ -421,12 +421,10 @@ async function downloadPdf() {
   width: 100%;
 }
 
-/* 页面内容占满可用宽度；缩进与 .upload-panel 的内边距一致，
-   使标题、描述与上传面板内的文字左右对齐 */
+/* header 与 .upload-panel 外框左右对齐（同宽、同起点） */
 .tool-header {
   width: 100%;
   margin-inline: 0;
-  padding-inline: 17px; /* 16px 内边距 + 1px 边框 */
 }
 
 .tool-description {
@@ -1007,12 +1005,7 @@ textarea {
   }
 }
 
-/* 窄屏下保持与面板内文字一致的缩进（面板内边距 16px + 边框 1px） */
 @media (max-width: 720px) {
-  .tool-header {
-    padding-inline: 17px;
-  }
-
   .upload-row {
     grid-template-columns: 1fr;
   }
