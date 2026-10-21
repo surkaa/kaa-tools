@@ -744,6 +744,9 @@ textarea {
   /* 高度由面板剩余空间决定，长文档在内部滚动 */
   min-height: 0;
   flex: 1 1 auto;
+  /* 作为纵向 flex 容器，使空状态能撑满整个预览区 */
+  display: flex;
+  flex-direction: column;
   padding: 8px;
   overflow: auto;
   overscroll-behavior: contain;
